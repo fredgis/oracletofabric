@@ -1,0 +1,334 @@
+metadata:
+  title: Oracle Database Free to Microsoft Fabric
+  view_type: target
+  deployment_status: not_deployed
+  verified_on: 2026-09-14
+  source_of_truth:
+    - ../../../README.md
+    - https://www.oracle.com/database/free/
+    - https://learn.microsoft.com/en-us/azure/bastion/private-only-deployment
+    - https://learn.microsoft.com/en-us/fabric/mirroring/oracle
+    - https://learn.microsoft.com/en-us/fabric/mirroring/oracle-limitations
+
+scope:
+  azure_tenant:
+    id: TBD
+    status: unresolved
+  subscription:
+    id: TBD
+    name: TBD
+    status: unresolved
+  region:
+    azure_region: TBD
+    fabric_region: TBD
+    requirement: Select nearby regions when possible.
+  resource_groups:
+    platform: TBD
+    network: TBD
+    workload: TBD
+  fabric:
+    workspace: TBD
+    capacity: TBD
+
+network:
+  vnet:
+    name: TBD
+    address_space: TBD
+    status: planned
+  peerings: []
+  subnets:
+    - name: AzureBastionSubnet
+      cidr: TBD
+      minimum_size: /26
+      purpose: Azure Bastion Premium private-only
+      public_ip_allowed: false
+    - name: snet-oracle
+      cidr: TBD
+      purpose: Oracle Linux VM and Oracle Database Free
+      private_subnet: true
+      public_ip_allowed: false
+    - name: snet-gateway
+      cidr: TBD
+      purpose: Windows VM and on-premises data gateway
+      private_subnet: true
+      public_ip_allowed: false
+    - name: snet-private-endpoints
+      cidr: TBD
+      purpose: Key Vault and future private endpoints
+      private_subnet: true
+      public_ip_allowed: false
+    - name: GatewaySubnet
+      cidr: TBD
+      purpose: Azure VPN Gateway when point-to-site VPN is selected
+      conditional: true
+  administration:
+    access_method: TBD
+    allowed_options:
+      - Point-to-site VPN
+      - ExpressRoute private peering
+    privacy_note: Point-to-site VPN uses an authenticated public VPN endpoint. ExpressRoute is required when policy forbids every public endpoint.
+    bastion:
+      sku: Premium
+      mode: private-only
+      public_ip: false
+      client: native
+  egress:
+    method: TBD
+    allowed_options:
+      - Azure NAT Gateway
+      - Azure Firewall
+    default_outbound_access: disabled
+    required_destinations:
+      - Oracle Container Registry
+      - Microsoft Entra ID
+      - Azure Relay
+      - Microsoft Fabric
+      - Microsoft update and gateway endpoints
+  private_endpoints:
+    - service: Azure Key Vault
+      subnet: snet-private-endpoints
+      status: planned
+    - service: Microsoft Fabric
+      status: not_used_for_oracle_mirroring
+      note: Fabric Private Link is a separate tenant access decision.
+  dns:
+    private_zones:
+      - privatelink.vaultcore.azure.net
+    oracle_name_resolution: TBD
+    resolver_design: TBD
+
+security_controls:
+  ingress:
+    internet_to_oracle_vm: blocked
+    internet_to_gateway_vm: blocked
+    internet_to_oracle_listener: blocked
+    administration_to_bastion: private_only
+  subnet_controls:
+    oracle_subnet_nsg: planned
+    gateway_subnet_nsg: planned
+    bastion_subnet_nsg: planned
+    denied_flow_logging: planned
+  secrets:
+    store: Azure Key Vault
+    oracle_credentials: planned
+    gateway_recovery_key: planned
+  identities:
+    oracle_vm_managed_identity: planned
+    gateway_vm_managed_identity: planned
+    fabric_workspace_roles: TBD
+    gateway_registration_identity: TBD
+    oracle_mirroring_account:
+      authentication: basic
+      privilege_scope: Microsoft documented Oracle Mirroring permissions
+
+components:
+  administration:
+    - id: admin-workstation
+      type: client
+      location: outside_azure_vnet
+  azure:
+    - id: private-access
+      type: vpn_or_expressroute
+      decision: unresolved
+    - id: bastion
+      type: azure_bastion
+      sku: Premium
+      mode: private-only
+    - id: oracle-vm
+      type: azure_linux_vm
+      os: Oracle Linux x64
+      public_ip: false
+      size: TBD
+    - id: oracle-data-disk
+      type: azure_managed_disk
+      size: TBD
+    - id: gateway-vm
+      type: azure_windows_vm
+      public_ip: false
+      size: TBD
+    - id: opdg
+      type: on_premises_data_gateway
+      mode: standard
+      host: gateway-vm
+      version: latest_supported_at_deployment
+    - id: key-vault
+      type: azure_key_vault
+      public_network_access: TBD
+    - id: controlled-egress
+      type: nat_gateway_or_azure_firewall
+      decision: unresolved
+  oracle:
+    - id: oracle-container-image
+      source: container-registry.oracle.com/database/free
+      product: Oracle AI Database 26ai Free
+      version: TBD
+      digest: TBD
+    - id: oracle-database
+      host: oracle-vm
+      runtime: Podman
+      storage: oracle-data-disk
+      listener_port: TBD
+      write_mode: required
+      archive_log: required
+      logminer: required
+      supplemental_logging: required
+  fabric:
+    - id: fabric-workspace
+      type: workspace
+      capacity: TBD
+    - id: mirrored-database
+      type: oracle_mirrored_database
+      storage: OneLake
+    - id: sql-analytics-endpoint
+      type: sql_analytics_endpoint
+    - id: lakehouse
+      type: fabric_lakehouse
+    - id: onelake-shortcuts
+      type: shortcuts
+      access: read_only_source
+
+data_model:
+  schema: DW
+  tables:
+    - name: DIM_DATE
+      target_rows: 731
+      key: DATE_KEY
+    - name: DIM_CUSTOMER
+      target_rows: 500
+      key: CUSTOMER_KEY
+    - name: DIM_PRODUCT
+      target_rows: 100
+      key: PRODUCT_KEY
+    - name: DIM_STORE
+      target_rows: 20
+      key: STORE_KEY
+    - name: FACT_SALES
+      target_rows: 25000
+      key: SALES_KEY
+  allowed_types:
+    - NUMBER with explicit precision and scale
+    - VARCHAR2
+    - CHAR
+    - DATE
+  excluded_types:
+    - LOB
+    - object types
+    - spatial types
+    - NUMBER without precision
+
+traffic_flows:
+  - id: admin-private-access
+    source: admin-workstation
+    destination: private-access
+    direction: inbound_to_azure
+    protocol: VPN or ExpressRoute
+    port: provider_managed
+    purpose: Private administration entry
+  - id: private-access-to-bastion
+    source: private-access
+    destination: bastion
+    direction: private
+    protocol: HTTPS
+    port: 443
+    purpose: Bastion native client access
+  - id: bastion-to-oracle-vm
+    source: bastion
+    destination: oracle-vm
+    direction: private
+    protocol: SSH
+    port: default_or_configured
+    purpose: Linux administration
+  - id: bastion-to-gateway-vm
+    source: bastion
+    destination: gateway-vm
+    direction: private
+    protocol: RDP
+    port: default_or_configured
+    purpose: Windows administration
+  - id: opdg-to-oracle
+    source: opdg
+    destination: oracle-database
+    direction: private
+    protocol: Oracle Net
+    port: TBD
+    purpose: Snapshot and LogMiner CDC reads
+  - id: oracle-image-pull
+    source: oracle-vm
+    destination: Oracle Container Registry
+    direction: outbound
+    protocol: HTTPS
+    port: 443
+    purpose: Pull pinned Oracle container image
+  - id: opdg-to-fabric
+    source: opdg
+    destination: fabric-workspace
+    direction: outbound
+    protocol: HTTPS and Azure Relay
+    port: 443_when_https_mode_is_forced
+    purpose: Oracle Mirroring publisher traffic
+  - id: vm-to-key-vault
+    source: oracle-vm_and_gateway-vm
+    destination: key-vault
+    direction: private
+    protocol: HTTPS
+    port: 443
+    purpose: Retrieve approved secrets
+  - id: mirror-to-lakehouse
+    source: mirrored-database
+    destination: lakehouse
+    direction: onelake
+    protocol: OneLake shortcut
+    port: service_managed
+    purpose: Read mirrored tables from the Lakehouse
+
+trust_boundaries:
+  - name: Administration endpoint
+    contains:
+      - admin-workstation
+  - name: Azure private network
+    contains:
+      - bastion
+      - oracle-vm
+      - gateway-vm
+      - opdg
+      - key-vault-private-endpoint
+  - name: Controlled public service egress
+    contains:
+      - Oracle Container Registry
+      - Azure Relay
+      - Microsoft Fabric endpoints
+  - name: Microsoft Fabric workspace
+    contains:
+      - mirrored-database
+      - sql-analytics-endpoint
+      - lakehouse
+
+confirmed_facts:
+  - Oracle Database Free is distributed as an official Oracle container image.
+  - Oracle Database Free has fixed CPU, memory, and user data limits.
+  - Azure Bastion private-only requires the Premium SKU and a dedicated AzureBastionSubnet of /26 or larger.
+  - The Oracle and gateway VMs will have no public IP address.
+  - Oracle Mirroring currently requires a standard on-premises data gateway.
+  - The gateway initiates outbound Azure Relay and Fabric connections.
+  - Oracle Mirroring creates a Mirrored Database in OneLake and a SQL analytics endpoint.
+  - A Lakehouse consumes mirrored tables through OneLake shortcuts.
+
+assumptions:
+  - This is a non-production PoC.
+  - Azure and Fabric regions will be selected close to each other.
+  - The Oracle listener uses a configurable private port that will be decided during implementation.
+  - Gateway HTTPS mode will be enabled when supported by the final network policy.
+  - Key Vault public network access will be disabled if the selected deployment process supports full private bootstrap.
+
+unresolved_questions:
+  - Which Azure tenant and subscription will host the PoC?
+  - Which Azure and Fabric regions will be used?
+  - What VNet and subnet CIDR ranges are available?
+  - Will administration use point-to-site VPN or ExpressRoute?
+  - Does the privacy policy prohibit public workload access only, or every public endpoint including VPN?
+  - Will outbound access use NAT Gateway or Azure Firewall?
+  - Which Fabric capacity and workspace will host the items?
+  - Is tenant-level Fabric Private Link required?
+  - What Oracle image tag and digest will be approved?
+  - What Oracle listener port and private DNS name will be used?
+  - Is a single gateway VM sufficient, or is a two-node cluster required?
