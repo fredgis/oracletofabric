@@ -1,194 +1,213 @@
 metadata:
-  title: Oracle Database Free to Microsoft Fabric
+  title: Oracle to Fabric Demo
   view_type: target
   deployment_status: not_deployed
   verified_on: 2026-09-14
+  sensitive_identifiers_stored: false
   source_of_truth:
     - ../../../README.md
     - https://www.oracle.com/database/free/
-    - https://learn.microsoft.com/en-us/azure/bastion/private-only-deployment
+    - https://learn.microsoft.com/en-us/azure/bastion/quickstart-host-portal
     - https://learn.microsoft.com/en-us/fabric/mirroring/oracle
     - https://learn.microsoft.com/en-us/fabric/mirroring/oracle-limitations
 
 scope:
   azure_tenant:
-    id: TBD
-    status: unresolved
+    id: not_stored
+    access_verified: true
   subscription:
-    id: TBD
-    name: TBD
-    status: unresolved
+    id: not_stored
+    state: enabled
+    owner_access_verified: true
   region:
-    azure_region: TBD
-    fabric_region: TBD
-    requirement: Select nearby regions when possible.
-  resource_groups:
-    platform: TBD
-    network: TBD
-    workload: TBD
+    azure_region: centralus
+    fabric_region: Central US
+  resource_group:
+    name: FGI-ORACLE
+    exists: true
+    empty: true
+    locked: false
   fabric:
-    workspace: TBD
-    capacity: TBD
+    workspace: FGI-ORACLE
+    workspace_admin_verified: true
+    capacity_sku: F16
+    capacity_state: Active
+
+naming:
+  prefix: demo
+  vnet: demo-oracle-vnet
+  oracle_vm: demo-oracle-vm
+  gateway_vm: demo-fabric-gateway-vm
+  bastion: demo-bastion
+  nat_gateway: demo-egress-nat
+  key_vault: demo-oracle-kv-unique
+  mirrored_database: Demo Oracle Mirror
+  lakehouse: Demo Lakehouse
+  oracle_schema: DEMO_DW
 
 network:
   vnet:
-    name: TBD
-    address_space: TBD
+    name: demo-oracle-vnet
+    address_space: 10.60.0.0/16
+    overlaps_existing_azure_vnets: false
     status: planned
   peerings: []
+  vpn_gateways: []
   subnets:
-    - name: AzureBastionSubnet
-      cidr: TBD
-      minimum_size: /26
-      purpose: Azure Bastion Premium private-only
+    - name: snet-demo-oracle
+      cidr: 10.60.1.0/24
+      purpose: Oracle Linux VM and Oracle AI Database Free
       public_ip_allowed: false
-    - name: snet-oracle
-      cidr: TBD
-      purpose: Oracle Linux VM and Oracle Database Free
-      private_subnet: true
-      public_ip_allowed: false
-    - name: snet-gateway
-      cidr: TBD
+    - name: snet-demo-gateway
+      cidr: 10.60.2.0/24
       purpose: Windows VM and on-premises data gateway
-      private_subnet: true
       public_ip_allowed: false
-    - name: snet-private-endpoints
-      cidr: TBD
-      purpose: Key Vault and future private endpoints
-      private_subnet: true
+    - name: snet-demo-private-endpoints
+      cidr: 10.60.3.0/24
+      purpose: Key Vault Private Endpoint
       public_ip_allowed: false
-    - name: GatewaySubnet
-      cidr: TBD
-      purpose: Azure VPN Gateway when point-to-site VPN is selected
-      conditional: true
   administration:
-    access_method: TBD
-    allowed_options:
-      - Point-to-site VPN
-      - ExpressRoute private peering
-    privacy_note: Point-to-site VPN uses an authenticated public VPN endpoint. ExpressRoute is required when policy forbids every public endpoint.
+    access_method: Azure Bastion Developer
+    client: Azure portal browser session
+    dedicated_subnet_required: false
+    bastion_public_ip_required: false
+    vpn_required: false
     bastion:
-      sku: Premium
-      mode: private-only
-      public_ip: false
-      client: native
+      sku: Developer
+      architecture: shared_pool
+      cost: free
+      intended_use: dev_test
   egress:
-    method: TBD
-    allowed_options:
-      - Azure NAT Gateway
-      - Azure Firewall
+    method: Azure NAT Gateway
+    name: demo-egress-nat
+    public_ip_count: 1
+    public_ip_scope: outbound_only
+    inbound_connections_supported: false
+    shared_egress_available: false
     default_outbound_access: disabled
     required_destinations:
-      - Oracle Container Registry
+      - Oracle public package repositories
       - Microsoft Entra ID
       - Azure Relay
       - Microsoft Fabric
       - Microsoft update and gateway endpoints
   private_endpoints:
     - service: Azure Key Vault
-      subnet: snet-private-endpoints
+      subnet: snet-demo-private-endpoints
       status: planned
     - service: Microsoft Fabric
       status: not_used_for_oracle_mirroring
-      note: Fabric Private Link is a separate tenant access decision.
   dns:
     private_zones:
       - privatelink.vaultcore.azure.net
-    oracle_name_resolution: TBD
-    resolver_design: TBD
+    oracle_name: demo-oracle.internal
+    resolver: Azure-provided DNS
 
 security_controls:
   ingress:
     internet_to_oracle_vm: blocked
     internet_to_gateway_vm: blocked
     internet_to_oracle_listener: blocked
-    administration_to_bastion: private_only
+    nat_public_ip_to_workloads: impossible
   subnet_controls:
     oracle_subnet_nsg: planned
     gateway_subnet_nsg: planned
-    bastion_subnet_nsg: planned
+    private_endpoint_subnet_policy: planned
     denied_flow_logging: planned
   secrets:
     store: Azure Key Vault
-    oracle_credentials: planned
-    gateway_recovery_key: planned
+    generation: deployment_time
+    committed_to_repository: false
+    oracle_credentials: generated
+    gateway_recovery_key: generated
+    gateway_certificate: generated
   identities:
+    deployment_identity:
+      type: certificate_backed_service_principal
+      certificate_store: Azure Key Vault
+      repository_secret_required: false
     oracle_vm_managed_identity: planned
     gateway_vm_managed_identity: planned
-    fabric_workspace_roles: TBD
-    gateway_registration_identity: TBD
+    fabric_service_principal_settings_verified: true
     oracle_mirroring_account:
       authentication: basic
-      privilege_scope: Microsoft documented Oracle Mirroring permissions
+      credential_store: Azure Key Vault
 
 components:
   administration:
-    - id: admin-workstation
-      type: client
-      location: outside_azure_vnet
+    - id: administrator
+      type: browser_client
+      path: Azure portal to Bastion Developer
   azure:
-    - id: private-access
-      type: vpn_or_expressroute
-      decision: unresolved
     - id: bastion
+      name: demo-bastion
       type: azure_bastion
-      sku: Premium
-      mode: private-only
-    - id: oracle-vm
-      type: azure_linux_vm
-      os: Oracle Linux x64
+      sku: Developer
       public_ip: false
-      size: TBD
+      dedicated_subnet: false
+    - id: oracle-vm
+      name: demo-oracle-vm
+      type: azure_linux_vm
+      os: Oracle Linux 9.8 Gen2 x64
+      public_ip: false
+      size: Standard_D2as_v7
     - id: oracle-data-disk
       type: azure_managed_disk
-      size: TBD
+      size: planned
     - id: gateway-vm
+      name: demo-fabric-gateway-vm
       type: azure_windows_vm
       public_ip: false
-      size: TBD
+      size: Standard_D4as_v7
     - id: opdg
       type: on_premises_data_gateway
       mode: standard
       host: gateway-vm
-      version: latest_supported_at_deployment
+      registration: unattended
     - id: key-vault
       type: azure_key_vault
-      public_network_access: TBD
-    - id: controlled-egress
-      type: nat_gateway_or_azure_firewall
-      decision: unresolved
+      public_network_access: disabled
+    - id: nat-gateway
+      name: demo-egress-nat
+      type: azure_nat_gateway
+      public_ip_count: 1
+      inbound: false
   oracle:
-    - id: oracle-container-image
-      source: container-registry.oracle.com/database/free
+    - id: oracle-rpm
+      source: Oracle public Linux package
       product: Oracle AI Database 26ai Free
-      version: TBD
-      digest: TBD
+      version: pinned_at_deployment
+      checksum: verified_at_deployment
+      registry_token_required: false
     - id: oracle-database
       host: oracle-vm
-      runtime: Podman
+      installation: native_rpm
       storage: oracle-data-disk
-      listener_port: TBD
+      listener_port: configured_at_deployment
       write_mode: required
       archive_log: required
       logminer: required
       supplemental_logging: required
   fabric:
     - id: fabric-workspace
+      name: FGI-ORACLE
       type: workspace
-      capacity: TBD
+      capacity: active_F16
     - id: mirrored-database
+      name: Demo Oracle Mirror
       type: oracle_mirrored_database
       storage: OneLake
     - id: sql-analytics-endpoint
       type: sql_analytics_endpoint
     - id: lakehouse
+      name: Demo Lakehouse
       type: fabric_lakehouse
     - id: onelake-shortcuts
       type: shortcuts
       access: read_only_source
 
 data_model:
-  schema: DW
+  schema: DEMO_DW
   tables:
     - name: DIM_DATE
       target_rows: 731
@@ -217,20 +236,13 @@ data_model:
     - NUMBER without precision
 
 traffic_flows:
-  - id: admin-private-access
-    source: admin-workstation
-    destination: private-access
-    direction: inbound_to_azure
-    protocol: VPN or ExpressRoute
-    port: provider_managed
-    purpose: Private administration entry
-  - id: private-access-to-bastion
-    source: private-access
+  - id: administrator-to-bastion
+    source: administrator
     destination: bastion
-    direction: private
+    direction: management
     protocol: HTTPS
     port: 443
-    purpose: Bastion native client access
+    purpose: Browser-based Bastion Developer session
   - id: bastion-to-oracle-vm
     source: bastion
     destination: oracle-vm
@@ -250,19 +262,19 @@ traffic_flows:
     destination: oracle-database
     direction: private
     protocol: Oracle Net
-    port: TBD
+    port: configured_at_deployment
     purpose: Snapshot and LogMiner CDC reads
-  - id: oracle-image-pull
+  - id: oracle-package-download
     source: oracle-vm
-    destination: Oracle Container Registry
-    direction: outbound
+    destination: Oracle public package repositories
+    direction: outbound_via_nat
     protocol: HTTPS
     port: 443
-    purpose: Pull pinned Oracle container image
+    purpose: Download pinned Oracle RPM
   - id: opdg-to-fabric
     source: opdg
     destination: fabric-workspace
-    direction: outbound
+    direction: outbound_via_nat
     protocol: HTTPS and Azure Relay
     port: 443_when_https_mode_is_forced
     purpose: Oracle Mirroring publisher traffic
@@ -272,63 +284,63 @@ traffic_flows:
     direction: private
     protocol: HTTPS
     port: 443
-    purpose: Retrieve approved secrets
+    purpose: Retrieve generated secrets and certificate
   - id: mirror-to-lakehouse
     source: mirrored-database
     destination: lakehouse
     direction: onelake
     protocol: OneLake shortcut
     port: service_managed
-    purpose: Read mirrored tables from the Lakehouse
+    purpose: Read mirrored tables from Demo Lakehouse
 
 trust_boundaries:
-  - name: Administration endpoint
+  - name: Azure management plane
     contains:
-      - admin-workstation
-  - name: Azure private network
+      - Azure portal
+      - Bastion Developer shared pool
+  - name: Demo private VNet
     contains:
-      - bastion
       - oracle-vm
       - gateway-vm
       - opdg
       - key-vault-private-endpoint
-  - name: Controlled public service egress
+  - name: Outbound-only public egress
     contains:
-      - Oracle Container Registry
+      - NAT Gateway public IP
+      - Oracle package endpoints
       - Azure Relay
       - Microsoft Fabric endpoints
   - name: Microsoft Fabric workspace
     contains:
-      - mirrored-database
+      - Demo Oracle Mirror
       - sql-analytics-endpoint
-      - lakehouse
+      - Demo Lakehouse
 
 confirmed_facts:
-  - Oracle Database Free is distributed as an official Oracle container image.
-  - Oracle Database Free has fixed CPU, memory, and user data limits.
-  - Azure Bastion private-only requires the Premium SKU and a dedicated AzureBastionSubnet of /26 or larger.
-  - The Oracle and gateway VMs will have no public IP address.
-  - Oracle Mirroring currently requires a standard on-premises data gateway.
-  - The gateway initiates outbound Azure Relay and Fabric connections.
-  - Oracle Mirroring creates a Mirrored Database in OneLake and a SQL analytics endpoint.
-  - A Lakehouse consumes mirrored tables through OneLake shortcuts.
+  - Azure Bastion Developer is free and requires no public IP or AzureBastionSubnet.
+  - Bastion Developer can be created through Azure CLI without a portal deployment step.
+  - No VPN Gateway is required.
+  - Neither workload VM has a public IP.
+  - One outbound-only NAT public IP is required because no shared egress exists.
+  - Oracle AI Database Free can be installed from the public Oracle Linux RPM.
+  - Oracle Mirroring requires a standard on-premises data gateway.
+  - Fabric tenant settings allow service principals to call the required APIs.
+  - Fabric creates a Mirrored Database in OneLake and a SQL analytics endpoint.
+  - Demo Lakehouse consumes mirrored tables through OneLake shortcuts.
 
 assumptions:
-  - This is a non-production PoC.
-  - Azure and Fabric regions will be selected close to each other.
-  - The Oracle listener uses a configurable private port that will be decided during implementation.
-  - Gateway HTTPS mode will be enabled when supported by the final network policy.
-  - Key Vault public network access will be disabled if the selected deployment process supports full private bootstrap.
+  - This is a non-production Demo.
+  - The administrator activation remains valid for the deployment window.
+  - Gateway HTTPS mode is enabled where supported.
+  - The selected NAT public IP is used only for outbound connections.
 
-unresolved_questions:
-  - Which Azure tenant and subscription will host the PoC?
-  - Which Azure and Fabric regions will be used?
-  - What VNet and subnet CIDR ranges are available?
-  - Will administration use point-to-site VPN or ExpressRoute?
-  - Does the privacy policy prohibit public workload access only, or every public endpoint including VPN?
-  - Will outbound access use NAT Gateway or Azure Firewall?
-  - Which Fabric capacity and workspace will host the items?
-  - Is tenant-level Fabric Private Link required?
-  - What Oracle image tag and digest will be approved?
-  - What Oracle listener port and private DNS name will be used?
-  - Is a single gateway VM sufficient, or is a two-node cluster required?
+external_failure_conditions:
+  - Administrator activation expires before role and identity setup completes.
+  - Conditional Access requires a new interactive challenge.
+  - Azure, Oracle, or Fabric service availability blocks automation.
+
+unresolved_at_deployment:
+  - Exact Oracle RPM version and checksum
+  - Generated globally unique Key Vault name
+  - Final Oracle listener port
+  - Final administrator source IP for Bastion Developer ACL

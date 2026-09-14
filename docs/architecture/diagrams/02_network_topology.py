@@ -1,4 +1,4 @@
-"""Target Azure network topology with unresolved deployment values marked TBD."""
+"""Target Azure network topology for the Oracle to Fabric Demo."""
 
 import sys
 from pathlib import Path
@@ -7,13 +7,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from diagrams import Cluster, Diagram, Edge
 from diagrams.azure.compute import VMLinux, VMWindows
+from diagrams.azure.general import ManagementPortal
 from diagrams.azure.network import (
     DNSPrivateZones,
     NetworkSecurityGroupsClassic,
     OnPremisesDataGateways,
     PrivateEndpoint,
+    PublicIpAddresses,
     RouteTables,
-    VirtualNetworkGateways,
 )
 from diagrams.azure.security import KeyVaults
 from diagrams.generic.network import Router
@@ -38,7 +39,7 @@ from common import (
 
 
 with Diagram(
-    "Oracle Database Free to Microsoft Fabric\n02 Network topology | Target, region and CIDRs TBD",
+    "Oracle to Fabric Demo\n02 Network topology | Central US target",
     filename=output_path("02-network-topology"),
     show=False,
     direction="LR",
@@ -47,60 +48,59 @@ with Diagram(
     node_attr=NODE_ATTR,
     edge_attr=EDGE_ATTR,
 ):
-    admin = User("Administration\nworkstation")
-    public_services = Internet("Oracle and Microsoft\npublic service endpoints")
+    admin = User("Administrator")
+    oracle_services = Internet("Oracle and Microsoft\npublic endpoints")
 
-    with Cluster("Azure tenant: TBD", graph_attr=AZURE_TENANT_ATTR):
-        with Cluster("Subscription: TBD", graph_attr=SUBSCRIPTION_ATTR):
-            with Cluster("Region: TBD", graph_attr=REGION_ATTR):
-                private_access = VirtualNetworkGateways("P2S VPN or ExpressRoute\nchoice pending")
+    with Cluster("Azure tenant | Identifier not stored", graph_attr=AZURE_TENANT_ATTR):
+        with Cluster("Subscription | Identifier not stored", graph_attr=SUBSCRIPTION_ATTR):
+            with Cluster("Central US", graph_attr=REGION_ATTR):
+                portal = ManagementPortal("Azure portal")
+                bastion = icon("demo-bastion\nDeveloper SKU", "azure-bastion.png")
 
-                with Cluster("Private VNet | Name and CIDR: TBD", graph_attr=VNET_ATTR):
-                    with Cluster("AzureBastionSubnet | /26 or larger", graph_attr=SUBNET_ATTR):
-                        bastion = icon("Azure Bastion Premium\nprivate-only", "azure-bastion.png")
-
-                    with Cluster("snet-oracle | CIDR: TBD", graph_attr=SUBNET_ATTR):
-                        oracle_vm = VMLinux("Oracle Linux VM\nno public IP")
+                with Cluster("demo-oracle-vnet | 10.60.0.0/16", graph_attr=VNET_ATTR):
+                    with Cluster("snet-demo-oracle | 10.60.1.0/24", graph_attr=SUBNET_ATTR):
+                        oracle_vm = VMLinux("demo-oracle-vm\nno public IP")
                         oracle_db = Oracle("Oracle Database Free\nprivate listener")
 
-                    with Cluster("snet-gateway | CIDR: TBD", graph_attr=SUBNET_ATTR):
-                        gateway_vm = VMWindows("Windows gateway VM\nno public IP")
+                    with Cluster("snet-demo-gateway | 10.60.2.0/24", graph_attr=SUBNET_ATTR):
+                        gateway_vm = VMWindows("demo-fabric-gateway-vm\nno public IP")
                         opdg = OnPremisesDataGateways("On-premises\ndata gateway")
 
-                    with Cluster("snet-private-endpoints | CIDR: TBD", graph_attr=SUBNET_ATTR):
+                    with Cluster("snet-demo-private-endpoints | 10.60.3.0/24", graph_attr=SUBNET_ATTR):
                         vault_pe = PrivateEndpoint("Key Vault\nPrivate Endpoint")
 
                     private_dns = DNSPrivateZones("Private DNS\nKey Vault and Oracle names")
-                    nsgs = NetworkSecurityGroupsClassic("Subnet NSGs\nrules: planned")
-                    routes = RouteTables("Route tables\nroutes: planned")
-                    egress = Router("Controlled outbound access\nNAT or Firewall\nchoice pending")
+                    nsgs = NetworkSecurityGroupsClassic("Demo subnet NSGs")
+                    routes = RouteTables("Demo route tables")
+                    nat = Router("demo-egress-nat\noutbound only")
 
-                key_vault = KeyVaults("Azure Key Vault")
+                nat_ip = PublicIpAddresses("One Standard public IP\nNAT only")
+                key_vault = KeyVaults("Demo Key Vault")
 
     fabric = icon("Microsoft Fabric\npublic service endpoints", "fabric_48_color.png")
 
-    admin >> Edge(label="Private connectivity", style="dashed", color="#757575") >> private_access
-    private_access >> Edge(style="dashed", color="#757575") >> bastion
+    admin >> Edge(label="HTTPS 443", style="dashed", color="#757575") >> portal
+    portal >> Edge(label="Browser session", style="dashed", color="#757575") >> bastion
     bastion >> Edge(label="SSH", style="dashed", color="#757575") >> oracle_vm
     bastion >> Edge(label="RDP", style="dashed", color="#757575") >> gateway_vm
 
-    oracle_vm >> Edge(label="Hosts") >> oracle_db
+    oracle_vm >> Edge(label="Native Oracle service") >> oracle_db
     gateway_vm >> Edge(label="Hosts") >> opdg
-    opdg >> Edge(label="Oracle Net\nconfigured private port") >> oracle_db
+    opdg >> Edge(label="Oracle Net\nprivate port") >> oracle_db
 
     vault_pe >> Edge(label="Private Link") >> key_vault
     private_dns >> Edge(label="Resolves vault", style="dashed", color="#757575") >> vault_pe
     private_dns >> Edge(label="Resolves Oracle", style="dashed", color="#757575") >> opdg
 
-    nsgs >> Edge(style="dashed", color="#757575") >> bastion
     nsgs >> Edge(style="dashed", color="#757575") >> oracle_vm
     nsgs >> Edge(style="dashed", color="#757575") >> gateway_vm
-    routes >> Edge(label="Default route", style="dashed", color="#757575") >> egress
+    routes >> Edge(label="Default route", style="dashed", color="#757575") >> nat
 
-    oracle_vm >> Edge(label="HTTPS 443 outbound") >> egress
-    opdg >> Edge(label="HTTPS 443 outbound") >> egress
-    egress >> public_services
-    egress >> fabric
+    oracle_vm >> Edge(label="HTTPS 443 outbound") >> nat
+    opdg >> Edge(label="HTTPS 443 outbound") >> nat
+    nat >> Edge(label="SNAT") >> nat_ip
+    nat_ip >> oracle_services
+    nat_ip >> fabric
 
     with Cluster("Legend", graph_attr=LEGEND_ATTR):
-        legend("Solid: network or data path\nDashed: management, DNS, or policy\nNo VM public IP and no direct Internet ingress")
+        legend("Solid: network or data path\nDashed: management, DNS, or policy\nNo workload public IP\nOne outbound-only NAT public IP")

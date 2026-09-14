@@ -1,16 +1,67 @@
-# Oracle Database Free to Microsoft Fabric
+# Oracle to Fabric Demo
 
-This repository will host a private Azure demonstration environment. Oracle AI Database Free will run on an Azure VM, a small star schema will be mirrored into Microsoft Fabric, and the replicated tables will be exposed in a Lakehouse.
+This repository describes and will automate a small end-to-end Oracle to Microsoft Fabric demonstration.
 
-> Status on September 14, 2026: development plan only. No Azure or Fabric resource has been deployed.
+Oracle AI Database Free will run on a private Azure VM. A compact star schema will be mirrored into Microsoft Fabric through an on-premises data gateway, then exposed in a Lakehouse through OneLake shortcuts.
+
+> Status on September 14, 2026: prerequisites verified, architecture documented, deployment not started.
+
+## Deployment contract
+
+After the explicit `GO`, the normal deployment path requires no portal click, credential entry, or manual configuration.
+
+The automation will:
+
+1. deploy the Azure network, VMs, disks, Key Vault, Bastion Developer, NAT Gateway, monitoring, and backup resources;
+2. generate all passwords, recovery keys, and certificates and store them in Key Vault;
+3. install Oracle AI Database Free from the public Oracle RPM package;
+4. configure `ARCHIVELOG`, LogMiner, supplemental logging, and the `DEMO_DW` schema;
+5. install and register the Fabric gateway without an interactive sign-in;
+6. create the Oracle connection, Mirrored Database, Lakehouse, and OneLake shortcuts through Fabric APIs;
+7. run network, snapshot, CDC, persistence, and reconciliation tests.
+
+No tenant ID, subscription ID, account name, token, password, certificate, or recovery key will be committed to this repository.
+
+The `GO` will also confirm use of Oracle AI Database Free under the [Oracle Free Use Terms](https://www.oracle.com/downloads/licenses/oracle-free-license.html). The only external events that could require intervention are an expired administrator activation, a Conditional Access challenge, or a cloud service failure.
+
+## Verified environment
+
+| Item | Verified state |
+| --- | --- |
+| Azure resource group | Existing, empty, and unlocked |
+| Azure region | Central US selected to match the Fabric capacity |
+| Fabric workspace | Existing and accessible with the Admin role |
+| Fabric capacity | Active F16 in Central US |
+| Fabric APIs | Workspaces, connections, gateways, and tenant settings accessible |
+| Automation identities | Service principals are allowed for Fabric public and administrative APIs |
+| Oracle Linux | Oracle Linux 9.8 Gen2 x64 image available |
+| VM sizes | `Standard_D2as_v7`, `Standard_D4as_v7`, and `Standard_D8as_v7` available |
+| VM quota | 100 vCPU available for the selected v7 families |
+| Azure providers | Compute, Network, Key Vault, Storage, Monitor, Backup, Maintenance, and Fabric registered |
+| Bicep | Version `0.47.16` installed |
+
+## Naming
+
+The existing Azure resource group and Fabric workspace keep their current names. Every new resource or Fabric item uses `Demo` or the `demo-` prefix.
+
+| Component | Planned name |
+| --- | --- |
+| Project | Oracle to Fabric Demo |
+| VNet | `demo-oracle-vnet` |
+| Oracle VM | `demo-oracle-vm` |
+| Gateway VM | `demo-fabric-gateway-vm` |
+| Bastion | `demo-bastion` |
+| NAT Gateway | `demo-egress-nat` |
+| Key Vault | `demo-oracle-kv-<unique>` |
+| Oracle schema | `DEMO_DW` |
+| Mirrored Database | `Demo Oracle Mirror` |
+| Lakehouse | `Demo Lakehouse` |
 
 ## Rendered architecture
 
-The primary diagram is generated with Python Diagrams and Graphviz. It uses Azure service icons and the official Microsoft Fabric icons.
+The architecture views are generated with Python Diagrams and Graphviz. They use Azure service icons and official Microsoft Fabric icons.
 
-[![Oracle Database Free to Microsoft Fabric target architecture](docs/architecture/rendered/01-context.svg)](docs/architecture/rendered/01-context.svg)
-
-The architecture pack separates context, network topology, security flows, and data flows so that each view remains readable.
+[![Oracle to Fabric Demo target architecture](docs/architecture/rendered/01-context.svg)](docs/architecture/rendered/01-context.svg)
 
 | View | SVG | PNG | PDF | Source |
 | --- | --- | --- | --- | --- |
@@ -19,72 +70,79 @@ The architecture pack separates context, network topology, security flows, and d
 | Security flows | [Open](docs/architecture/rendered/03-security-flows.svg) | [Open](docs/architecture/rendered/03-security-flows.png) | [Open](docs/architecture/rendered/03-security-flows.pdf) | [`03_security_flows.py`](docs/architecture/diagrams/03_security_flows.py) |
 | Data flows | [Open](docs/architecture/rendered/04-data-flows.svg) | [Open](docs/architecture/rendered/04-data-flows.png) | [Open](docs/architecture/rendered/04-data-flows.pdf) | [`04_data_flows.py`](docs/architecture/diagrams/04_data_flows.py) |
 
-The [architecture inventory](docs/architecture/architecture-inventory.yaml) records confirmed facts, assumptions, traffic flows, and unresolved deployment values. The diagrams describe a target state, not a deployed environment.
+The [architecture inventory](docs/architecture/architecture-inventory.yaml) is the source of truth for the diagrams. Sensitive environment identifiers are deliberately omitted.
 
 ## Architecture decisions
 
 | Topic | Decision |
 | --- | --- |
-| Oracle image | Use the official Oracle AI Database 26ai Free container image from Oracle Container Registry, pinned to an exact version and digest. |
-| Host | Run the container on an x64 Oracle Linux VM with a dedicated managed data disk. The VM will have no public IP address. |
-| Administration | Use Azure Bastion Premium in private-only mode. Local access will use point-to-site VPN or ExpressRoute and the Bastion native client. |
-| Oracle network | Oracle will listen only on its private address. Oracle Net will be allowed from the Fabric gateway subnet, never from the Internet. |
-| Outbound access | Use NAT Gateway for the PoC, or Azure Firewall when FQDN filtering and centralized traffic logs are required. |
-| Fabric connection | Install a standard on-premises data gateway on a dedicated Windows VM in the VNet. This is the currently supported path for Oracle Mirroring. |
-| Fabric destination | A Mirrored Database will replicate Oracle tables into OneLake and provide a SQL analytics endpoint. |
-| Lakehouse | A OneLake shortcut will expose the Mirrored Database tables in the Lakehouse without creating a second copy. |
-| Fabric Private Endpoint | It does not replace the Oracle gateway. Fabric Private Link is a separate decision for private access to Fabric interfaces. |
-| Intended use | Oracle AI Database Free is suitable for this PoC. A production workload requires a supported and patched Oracle edition. |
+| Oracle installation | Install Oracle AI Database 26ai Free from the public Oracle Linux RPM package. No Oracle Container Registry token is required. |
+| Oracle host | Use `Standard_D2as_v7`, Oracle Linux 9.8 Gen2 x64, and a dedicated managed data disk. |
+| Gateway host | Start with `Standard_D4as_v7` for the small Demo data set. Scale to `D8as_v7` only if gateway measurements require it. |
+| Administration | Use free Azure Bastion Developer through the Azure portal. It needs no VPN Gateway, public IP, or `AzureBastionSubnet`. |
+| Workload ingress | Neither VM has a public IP. SSH, RDP, and Oracle Net are never exposed directly to the Internet. |
+| Outbound access | Use NAT Gateway with one Standard public IP dedicated to outbound traffic. NAT does not accept unsolicited inbound connections. |
+| Secrets | Generate credentials during deployment and store them in Key Vault through a Private Endpoint. |
+| Fabric connection | Install a standard on-premises data gateway on the private Windows VM. |
+| Fabric destination | Replicate the Oracle tables into `Demo Oracle Mirror`, which stores Delta tables in OneLake. |
+| Lakehouse | Create `Demo Lakehouse` and add OneLake shortcuts to the mirrored tables. |
+| Intended use | Demonstration only. Oracle AI Database Free is unsupported and receives no security patches. |
 
-The supplied Oracle page is not an Azure Marketplace VM image. The plan uses an Oracle Linux image from Azure Marketplace, then runs the official `container-registry.oracle.com/database/free` image with Podman. The VM will pull the image through controlled outbound access. The image will not be copied into Azure Container Registry until the Oracle terms have been reviewed for that use.
+### One unavoidable public IP
+
+There is no shared Azure egress service in the subscription. Oracle installation and the Fabric gateway both require outbound access to public Oracle and Microsoft endpoints.
+
+The Demo therefore needs one public IP attached only to NAT Gateway. It is not attached to a VM or Bastion, has no inbound path, and cannot expose Oracle. Removing it would break package installation, gateway registration, and mirroring.
 
 ## Editable Mermaid architecture
 
-The rendered diagrams above are the presentation views. The Mermaid diagrams below remain useful for quick review and lightweight edits in GitHub.
-
 ```mermaid
 flowchart LR
-    Admin[Administration workstation]
-    PrivateAccess[P2S VPN or ExpressRoute]
+    Admin[Administrator]
+    Portal[Azure portal]
+    Bastion[Azure Bastion Developer<br/>shared and free]
 
-    subgraph Azure["Azure tenant"]
-        subgraph VNet["Private VNet"]
-            Bastion[Azure Bastion Premium<br/>private-only]
-
-            subgraph OracleSubnet["Oracle subnet"]
-                OracleVM[Oracle Linux VM<br/>no public IP]
-                OracleDB[(Oracle AI Database 26ai Free<br/>container and managed disk)]
+    subgraph Azure["Azure Demo"]
+        subgraph VNet["demo-oracle-vnet<br/>10.60.0.0/16"]
+            subgraph OracleSubnet["snet-demo-oracle<br/>10.60.1.0/24"]
+                OracleVM[demo-oracle-vm<br/>no public IP]
+                OracleDB[(Oracle AI Database 26ai Free<br/>native RPM and managed disk)]
                 OracleVM --> OracleDB
             end
 
-            subgraph GatewaySubnet["Data gateway subnet"]
-                GatewayVM[Dedicated Windows VM<br/>no public IP]
+            subgraph GatewaySubnet["snet-demo-gateway<br/>10.60.2.0/24"]
+                GatewayVM[demo-fabric-gateway-vm<br/>no public IP]
                 OPDG[On-premises data gateway<br/>Oracle Client for Microsoft Tools]
                 GatewayVM --> OPDG
             end
 
-            Egress[Controlled outbound access<br/>NAT Gateway or Azure Firewall]
-            KeyVault[Key Vault<br/>Private Endpoint]
+            subgraph PrivateEndpointSubnet["snet-demo-private-endpoints<br/>10.60.3.0/24"]
+                KeyVault[Key Vault Private Endpoint]
+            end
+
+            NAT[NAT Gateway<br/>outbound only]
         end
+
+        NATIP[One Standard public IP<br/>outbound only]
     end
 
     subgraph Fabric["Microsoft Fabric"]
-        Workspace[Fabric capacity workspace]
-        Mirror[(Mirrored Database)]
+        Workspace[Existing workspace and F16 capacity]
+        Mirror[(Demo Oracle Mirror)]
         SQLEndpoint[SQL analytics endpoint]
-        Lakehouse[(Lakehouse)]
+        Lakehouse[(Demo Lakehouse)]
         Workspace --> Mirror
         Mirror --> SQLEndpoint
-        Mirror -->|OneLake shortcut| Lakehouse
+        Mirror -->|OneLake shortcuts| Lakehouse
     end
 
-    Admin --> PrivateAccess --> Bastion
-    Bastion -->|Private SSH| OracleVM
-    Bastion -->|Private RDP| GatewayVM
+    Admin -->|HTTPS 443| Portal --> Bastion
+    Bastion -->|SSH| OracleVM
+    Bastion -->|RDP| GatewayVM
     OPDG -->|Private Oracle Net| OracleDB
-    OracleVM -->|Initial pull and updates| Egress
-    OPDG -->|Outbound HTTPS and Azure Relay| Egress
-    Egress --> Workspace
+    OracleVM -->|HTTPS 443| NAT
+    OPDG -->|HTTPS 443 and Azure Relay| NAT
+    NAT --> NATIP --> Workspace
     OracleVM --> KeyVault
     GatewayVM --> KeyVault
 
@@ -95,73 +153,70 @@ flowchart LR
     classDef neutral fill:#F5F5F5,stroke:#616161,color:#212121,stroke-width:1px;
 
     class OracleVM,OracleDB oracle;
-    class Bastion,GatewayVM,OPDG azure;
-    class PrivateAccess,Egress,KeyVault security;
+    class Portal,Bastion,GatewayVM,OPDG azure;
+    class NAT,NATIP,KeyVault security;
     class Workspace,Mirror,SQLEndpoint,Lakehouse fabric;
     class Admin neutral;
 ```
 
-The colors identify technical ownership: red for Oracle, blue for Azure resources, green for network controls, and purple for Fabric.
+The colors identify ownership: red for Oracle, blue for Azure services, green for security and egress controls, and purple for Fabric.
 
-### Why the design uses a gateway instead of a Private Endpoint
+## Network layout
 
-Oracle runs on a VM with a private network interface. It does not need an Azure Private Endpoint to remain private.
-
-Oracle Mirroring in Fabric currently supports the on-premises data gateway. The gateway connects to Oracle over the private VNet, then initiates outbound connections to Azure Relay and Fabric. It requires no inbound Internet port.
-
-The following services are not used as the Oracle replication path:
-
-- VNet data gateway, which is not documented as supported for Oracle Mirroring
-- Fabric managed private endpoints, which do not replace the on-premises data gateway in this scenario
-- Fabric Private Link, which protects access to Fabric interfaces but does not provide the Oracle source connection
-
-Fabric Private Link remains a separate gate. Gateway registration or recovery can require specific sequencing when tenant-level Private Link is enabled.
-
-## Planned network layout
-
-| Subnet | Purpose | Allowed traffic |
+| Network | Address range | Purpose |
 | --- | --- | --- |
-| `AzureBastionSubnet` | Bastion Premium private-only, `/26` or larger | Private HTTPS from the administration network, then SSH and RDP to target VMs |
-| `snet-oracle` | Oracle Linux VM and Oracle Database Free | Oracle Net from `snet-gateway`, SSH from Bastion, controlled outbound access for the image and updates |
-| `snet-gateway` | Windows VM and on-premises data gateway | Oracle Net to `snet-oracle`, RDP from Bastion, outbound HTTPS and Azure Relay |
-| `snet-private-endpoints` | Key Vault and future private PaaS endpoints | Private DNS resolution and access from approved VMs |
-| `GatewaySubnet` | Azure VPN Gateway when point-to-site VPN is selected | Encrypted access from the administration workstation |
+| `demo-oracle-vnet` | `10.60.0.0/16` | Isolated Demo network |
+| `snet-demo-oracle` | `10.60.1.0/24` | Oracle Linux VM and Oracle database |
+| `snet-demo-gateway` | `10.60.2.0/24` | Windows VM and Fabric gateway |
+| `snet-demo-private-endpoints` | `10.60.3.0/24` | Key Vault Private Endpoint |
 
-All workload subnets will be private and will use an explicit outbound method. Azure VNets created with API versions after March 31, 2026 use private subnets by default.
-
-A point-to-site VPN gateway still exposes an authenticated public VPN endpoint. If the policy forbids every public endpoint, not only public workload access, the administration path must use private connectivity such as ExpressRoute.
+The selected VNet range does not overlap the two VNets currently present in the subscription. The Demo creates no peering and no VPN connection.
 
 ### Security rules
 
-- no public IP address on either VM network interface
-- no Internet ingress for SSH, RDP, or Oracle Net
-- Oracle Net allowed only from the Fabric gateway subnet
-- administration only through Bastion and private network connectivity
-- managed identities for Azure service access
-- Oracle credentials and the gateway recovery key stored in Key Vault
-- a separate NSG for each subnet, with denied traffic logged
-- outbound access limited to required Oracle and Microsoft endpoints
-- periodic use of the network ports test in the on-premises data gateway application
+- no public IP on either VM
+- no public IP or dedicated subnet for Bastion Developer
+- exactly one outbound-only public IP on NAT Gateway
+- no inbound Internet rule for SSH, RDP, or Oracle Net
+- Oracle Net allowed only from the gateway subnet
+- Bastion Developer restricted to the approved administrator source address when supported
+- managed identities for Key Vault access
+- credentials, certificates, and recovery keys generated at deployment time
+- separate NSGs for the Oracle, gateway, and Private Endpoint subnets
+- gateway outbound traffic forced to HTTPS where supported
+- network ports test executed after gateway registration
 
-## Demonstration warehouse schema
+## Why the design uses a gateway
 
-The `DW` schema will remain intentionally small. These row counts are generation targets, not product limits.
+Oracle Mirroring currently supports the on-premises data gateway. The gateway reads Oracle over the private VNet and initiates outbound connections to Azure Relay and Fabric.
+
+The following services do not replace that gateway:
+
+- VNet data gateway, which is not documented as supported for Oracle Mirroring
+- Fabric managed private endpoints
+- Fabric Private Link
+
+The gateway needs outbound access, but it never needs an inbound Internet port.
+
+## Demo warehouse schema
+
+The `DEMO_DW` schema is intentionally small.
 
 | Table | Purpose | Target rows | Key |
 | --- | --- | ---: | --- |
-| `DW.DIM_DATE` | two calendar years | 731 | `DATE_KEY` |
-| `DW.DIM_CUSTOMER` | synthetic customers and segments | 500 | `CUSTOMER_KEY` |
-| `DW.DIM_PRODUCT` | small product catalog | 100 | `PRODUCT_KEY` |
-| `DW.DIM_STORE` | stores and regions | 20 | `STORE_KEY` |
-| `DW.FACT_SALES` | sales linked to all dimensions | 25,000 | `SALES_KEY` |
+| `DEMO_DW.DIM_DATE` | two calendar years | 731 | `DATE_KEY` |
+| `DEMO_DW.DIM_CUSTOMER` | synthetic customers and segments | 500 | `CUSTOMER_KEY` |
+| `DEMO_DW.DIM_PRODUCT` | small product catalog | 100 | `PRODUCT_KEY` |
+| `DEMO_DW.DIM_STORE` | stores and regions | 20 | `STORE_KEY` |
+| `DEMO_DW.FACT_SALES` | sales linked to all dimensions | 25,000 | `SALES_KEY` |
 
 ```mermaid
 flowchart TB
-    Date[DIM_DATE]
-    Customer[DIM_CUSTOMER]
-    Product[DIM_PRODUCT]
-    Store[DIM_STORE]
-    Sales[(FACT_SALES)]
+    Date[DEMO_DW.DIM_DATE]
+    Customer[DEMO_DW.DIM_CUSTOMER]
+    Product[DEMO_DW.DIM_PRODUCT]
+    Store[DEMO_DW.DIM_STORE]
+    Sales[(DEMO_DW.FACT_SALES)]
 
     Date -->|DATE_KEY| Sales
     Customer -->|CUSTOMER_KEY| Sales
@@ -175,37 +230,30 @@ flowchart TB
     class Sales fact;
 ```
 
-The model will use simple types supported by mirroring: `NUMBER(p,s)` with explicit precision, `VARCHAR2`, `CHAR`, and `DATE`. Every table will have a primary key. The PoC will avoid LOBs, object types, spatial types, and `NUMBER` columns without precision.
+The schema uses `NUMBER(p,s)` with explicit precision, `VARCHAR2`, `CHAR`, and `DATE`. Every mirrored table has a primary key. LOBs, object types, spatial types, and `NUMBER` columns without precision are excluded.
 
-The data set will support an initial snapshot followed by `INSERT`, `UPDATE`, and `DELETE` validation on dimensions and the fact table.
+## Multi-agent delivery
 
-## Multi-agent development plan
-
-Each agent owns a defined boundary. Agents work on separate branches and use cross-review before integration.
-
-| Agent | Responsibility | Planned deliverables |
-| --- | --- | --- |
-| Azure platform agent | conventions, resource groups, identities, Key Vault, monitoring | shared IaC modules and environment parameters |
-| Network and security agent | VNet, subnets, NSGs, Bastion, VPN, DNS, outbound control | network modules, traffic matrix, and compliance checks |
-| Oracle agent | Linux VM, storage, Podman, Oracle image, LogMiner, backup | host automation, database configuration, and DBA runbook |
-| Data model agent | `DW` schema, data generation, reconciliation queries | idempotent SQL scripts and data quality checks |
-| Fabric agent | gateway VM, OPDG, Oracle driver, Mirrored Database, Lakehouse, shortcuts | Fabric procedures, connection configuration, and monitoring |
-| Validation agent | network isolation, persistence, snapshot, CDC, recovery, cost | automated checks, execution evidence, and final report |
-| Reviewer agent | architecture, security, license, and documentation review | go/no-go decision and tracked gaps |
-
-### Delivery sequence
+| Agent | Responsibility |
+| --- | --- |
+| Azure platform | resource groups, identities, Key Vault, monitoring, backup |
+| Network and security | VNet, subnets, NSGs, Bastion Developer, NAT, Private Endpoint |
+| Oracle | VM, RPM installation, storage, LogMiner, backup, `DEMO_DW` |
+| Fabric | unattended gateway registration, connection, mirror, Lakehouse, shortcuts |
+| Validation | isolation, snapshot, CDC, persistence, recovery, cost |
+| Reviewer | architecture, security, license, and final go/no-go |
 
 ```mermaid
 flowchart LR
-    P0[Phase 0<br/>Decisions and prerequisites]
-    P1A[Phase 1A<br/>Azure foundation]
-    P1B[Phase 1B<br/>Fabric preparation]
-    P2A[Phase 2A<br/>Private Oracle host]
-    P2B[Phase 2B<br/>Private gateway]
-    P2C[Phase 2C<br/>DW schema]
-    P3[Phase 3<br/>Mirroring and shortcut]
-    P4[Phase 4<br/>Tests and recovery]
-    P5[Phase 5<br/>Review and handover]
+    P0[Demo prerequisites]
+    P1A[Azure foundation]
+    P1B[Fabric automation identity]
+    P2A[Oracle installation]
+    P2B[Gateway installation]
+    P2C[DEMO_DW load]
+    P3[Mirroring and shortcuts]
+    P4[End-to-end validation]
+    P5[Demo handover]
 
     P0 --> P1A
     P0 --> P1B
@@ -231,95 +279,101 @@ flowchart LR
     class P4 test;
 ```
 
-Phases 1A and 1B can start in parallel. Once the VNet exists, the Oracle, gateway, and data model agents can proceed without waiting for the final mirroring configuration.
+## Delivery phases
 
-## Phases and gates
+### Phase 0: automation identity
 
-### Phase 0: scope
+- create a certificate-backed service principal
+- add it to the existing Fabric API security group
+- grant only the roles needed for the Demo
+- store the certificate and gateway recovery key in Key Vault
+- keep all environment identifiers outside tracked files
 
-- select the Azure subscription, Azure region, and Fabric region
-- confirm VM quotas, Fabric capacity, and workspace roles
-- accept the Oracle Container Registry terms with a dedicated account
-- choose point-to-site VPN or ExpressRoute for private-only Bastion access
-- define IP ranges and naming conventions
-- choose NAT Gateway or Azure Firewall
+Exit gate: Azure, Fabric, and gateway APIs accept non-interactive authentication.
 
-Exit gate: the administration workstation has a planned private path to the VNet and recurring costs are accepted.
+### Phase 1: Azure foundation
 
-### Phase 1: private foundation
+- deploy the Central US VNet and three subnets
+- deploy Bastion Developer
+- deploy NAT Gateway and its outbound-only public IP
+- deploy Key Vault and its Private Endpoint
+- deploy NSGs, route tables, monitoring, and backup resources
 
-- create resource groups and managed identities
-- create the VNet, private subnets, NSGs, route tables, and DNS
-- deploy Bastion Premium in private-only mode
-- deploy VPN when required
-- deploy Key Vault with a Private Endpoint
-- configure explicit outbound access and monitoring
+Exit gate: no workload has a public IP or inbound Internet path.
 
-Exit gate: neither VM can receive a public IP address and the administration path is private.
+### Phase 2: Oracle and `DEMO_DW`
 
-### Phase 2: Oracle and the `DW` schema
-
-- deploy an x64 Oracle Linux VM with 2 vCPU, sufficient host memory, and a separate data disk
-- pull an exact Oracle Database Free image version and record its digest
-- mount Oracle data on the managed disk so it survives container replacement
+- deploy the Oracle Linux VM as `Standard_D2as_v7`
+- attach the managed data disk
+- download and verify the pinned Oracle AI Database Free RPM
+- install and configure the database service
+- generate Oracle administrator and mirroring credentials in Key Vault
 - enable `ARCHIVELOG`, LogMiner, and supplemental logging
-- create a dedicated mirroring user with the documented permissions
-- create the five star-schema tables and load the target volumes
-- retain archive logs long enough to cover gateway interruptions
+- create and load the five `DEMO_DW` tables
 
-Exit gate: the database restarts without data loss, the listener remains private, and every mirrored table has a primary key.
+Exit gate: Oracle restarts without data loss and the listener is reachable only from approved private sources.
 
 ### Phase 3: gateway and Fabric
 
-- deploy a dedicated Windows VM in `snet-gateway`
-- install the latest standard on-premises data gateway
-- install the latest Oracle Client for Microsoft Tools
-- verify private DNS resolution and Oracle connectivity
-- register the gateway and run its built-in network test
-- create the workspace and Lakehouse on an active Fabric capacity
-- create the Oracle connection with the mirroring account
-- create the Mirrored Database and select the `DW` tables
-- wait for the initial snapshot to complete
-- create OneLake shortcuts under the Lakehouse `Tables` area
+- deploy the Windows gateway VM as `Standard_D4as_v7`
+- install Oracle Client for Microsoft Tools
+- install the standard on-premises data gateway silently
+- register the gateway with the certificate-backed service principal
+- create the Oracle connection with credentials read from Key Vault
+- create `Demo Oracle Mirror`
+- create `Demo Lakehouse`
+- create OneLake shortcuts to the five mirrored tables
 
-Exit gate: all five tables are visible in the Mirrored Database, SQL analytics endpoint, and Lakehouse.
+Exit gate: all Demo tables are visible in the Mirrored Database, SQL analytics endpoint, and Lakehouse.
 
 ### Phase 4: validation
 
 | Test | Expected evidence |
 | --- | --- |
-| Isolation | Azure inventory shows no public IP on either VM and Internet ingress fails |
-| Administration | Linux and Windows sessions work through the Bastion native client |
-| Oracle persistence | data remains intact after container and VM restarts |
-| Snapshot | Oracle and Fabric return the same row counts and sales aggregates |
+| Isolation | no VM public IP and no Internet ingress path |
+| Bastion | browser sessions reach both private VMs |
+| Persistence | Oracle data survives service and VM restarts |
+| Snapshot | Oracle and Fabric return the same row counts and aggregates |
 | CDC | one insert, update, and delete appear in Fabric |
-| Lakehouse | all five shortcuts are readable from Spark and the SQL analytics endpoint |
+| Lakehouse | all five shortcuts are readable from Spark and SQL |
 | Recovery | replication resumes after a controlled gateway restart |
-| Observability | table state, errors, and latency are visible in Fabric logs |
-| Cost | monthly estimates cover Bastion, VPN, VMs, disks, outbound access, and Fabric capacity |
+| Secrets | no credential or environment identifier exists in Git history |
 
-Exit gate: no table is failing, no unexpected reseed occurs, and reconciliation reports no data difference.
+Exit gate: every test passes without manual correction.
 
-### Phase 5: hardening and handover
+## Running cost while deployed
 
-- define Oracle backups and test a restore
-- document monthly gateway and Oracle client updates
-- add a second gateway VM when high availability is required
-- finalize Azure Monitor and Fabric alerts
-- review Oracle, Azure, and Fabric privileges
-- assess Fabric Private Link without changing the Oracle replication path
-- document start, stop, recovery, and PoC deletion procedures
+The Demo removes the VPN Gateway and paid Bastion. The remaining resources that keep charging while they exist are approximately:
+
+| Resource | Monthly retail estimate |
+| --- | ---: |
+| NAT Gateway | 28 EUR |
+| NAT public IP | 3 EUR |
+| Key Vault Private Endpoint | 6 EUR |
+| Managed disks | 34 EUR |
+| **Persistent Demo infrastructure** | **about 71 EUR** |
+
+VM compute and Fabric capacity can be stopped. NAT, its public IP, the Private Endpoint, and disks must be deleted to stop their charges completely.
+
+## Constraints
+
+- Oracle AI Database Free is licensed at no charge under the Oracle Free Use Terms.
+- It is limited to one installation per VM, 2 CPUs, 2 GB of Oracle memory, and 12 GB of user data.
+- It is unsupported and receives no security patches.
+- Oracle Mirroring requires write mode, LogMiner, `ARCHIVELOG`, supplemental logging, and a standard on-premises data gateway.
+- The gateway requires public outbound access to Microsoft endpoints.
+- A mirrored table needs a primary key or unique index.
+- A Mirrored Database supports up to 1,000 tables.
+- Bastion Developer is free, shared, browser-only, and intended for dev/test use.
 
 ## Planned repository layout
-
-This tree describes future deliverables. Deployment files will be created only when implementation starts.
 
 ```text
 infra/
   environments/
   modules/
 oracle/
-  container/
+  rpm/
   sql/
 fabric/
   gateway/
@@ -331,47 +385,34 @@ docs/
   decisions/
 ```
 
-## Constraints
-
-- Oracle AI Database Free limits the instance to 2 CPUs, 2 GB of database memory, and 12 GB of user data.
-- Oracle AI Database Free does not provide the support and patching level expected for production.
-- Oracle Mirroring requires Oracle 10 or later, write mode, LogMiner, `ARCHIVELOG`, and supplemental logging.
-- A Mirrored Database supports up to 1,000 tables.
-- A mirrored table needs a primary key or unique index.
-- Column type changes are not supported.
-- The gateway must reach Oracle privately and Azure Relay through controlled outbound access.
-- A network that blocks every Microsoft public service endpoint is not compatible with this design.
-- The Mirrored Database is the replication target. The Lakehouse reads it through shortcuts.
-- Bastion Premium private-only incurs hourly cost even when no one is connected.
-
 ## Completion criteria
 
-The PoC is complete when:
+The Demo is complete when:
 
-1. no VM or Oracle listener is directly exposed to the Internet;
-2. administration works from the local workstation through a private path;
-3. the `DW` schema is persistent and reproducible;
-4. all five tables are replicated into the Mirrored Database;
-5. the Lakehouse reads those tables through OneLake shortcuts;
-6. `INSERT`, `UPDATE`, and `DELETE` changes are verified end to end;
-7. cost, limits, backups, and recovery procedures are documented.
+1. all Azure and Fabric resources deploy without a manual step;
+2. neither VM nor Oracle is directly exposed to the Internet;
+3. `DEMO_DW` is persistent and reproducible;
+4. all five tables replicate into `Demo Oracle Mirror`;
+5. `Demo Lakehouse` reads them through OneLake shortcuts;
+6. `INSERT`, `UPDATE`, and `DELETE` changes pass end-to-end validation;
+7. the teardown removes every hourly resource and leaves no secret in the repository.
 
 ## Official sources
 
 ### Oracle
 
 - [Oracle AI Database Free](https://www.oracle.com/database/free/)
-- [Oracle Database Free in Oracle Container Registry](https://container-registry.oracle.com/ords/ocr/ba/database/free)
-- [Oracle Database container images](https://github.com/oracle/docker-images/tree/main/OracleDatabase/SingleInstance)
-- [Oracle AI Database 26ai Free licensing and resource restrictions](https://docs.oracle.com/en/database/oracle/oracle-database/26/xeinl/licensing-restrictions.html)
+- [Oracle Free Use Terms](https://www.oracle.com/downloads/licenses/oracle-free-license.html)
+- [Install Oracle AI Database Free on Linux](https://docs.oracle.com/en/database/oracle/oracle-database/26/xeinl/installing-oracle-database-free.html)
+- [Oracle AI Database 26ai Free restrictions](https://docs.oracle.com/en/database/oracle/oracle-database/26/xeinl/licensing-restrictions.html)
 - [Oracle AI Database Free FAQ](https://www.oracle.com/database/free/faq/)
 
 ### Azure
 
-- [Deploy Azure Bastion in private-only mode](https://learn.microsoft.com/en-us/azure/bastion/private-only-deployment)
-- [Azure Bastion configuration settings](https://learn.microsoft.com/en-us/azure/bastion/configuration-settings)
-- [Default outbound access for Azure VNets](https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/default-outbound-access)
+- [Azure Bastion Developer](https://learn.microsoft.com/en-us/azure/bastion/quickstart-host-portal#developer-sku-free)
+- [Azure Bastion SKU comparison](https://learn.microsoft.com/en-us/azure/bastion/bastion-sku-comparison)
 - [Azure NAT Gateway](https://learn.microsoft.com/en-us/azure/nat-gateway/nat-overview)
+- [Default outbound access for Azure VNets](https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/default-outbound-access)
 
 ### Microsoft Fabric
 
@@ -379,5 +420,6 @@ The PoC is complete when:
 - [Oracle Mirroring limitations](https://learn.microsoft.com/en-us/fabric/mirroring/oracle-limitations)
 - [Configure Oracle Mirroring](https://learn.microsoft.com/en-us/fabric/mirroring/oracle-tutorial)
 - [On-premises data gateway communication](https://learn.microsoft.com/en-us/data-integration/gateway/service-gateway-communication)
+- [Data gateway PowerShell cmdlets](https://learn.microsoft.com/en-us/powershell/gateway/overview)
 - [Create a Lakehouse shortcut to a Mirrored Database](https://learn.microsoft.com/en-us/fabric/mirroring/explore-onelake-shortcut)
 - [Official Microsoft Fabric icons](https://learn.microsoft.com/en-us/fabric/fundamentals/icons)
