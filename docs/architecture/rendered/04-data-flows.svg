@@ -28,9 +28,9 @@
 <path fill="#f7f7f7" stroke="#9e9e9e" d="M20,-557C20,-557 242.4,-557 242.4,-557 248.4,-557 254.4,-563 254.4,-569 254.4,-569 254.4,-657 254.4,-657 254.4,-663 248.4,-669 242.4,-669 242.4,-669 20,-669 20,-669 14,-669 8,-663 8,-657 8,-657 8,-569 8,-569 8,-563 14,-557 20,-557"/>
 <text xml:space="preserve" text-anchor="middle" x="32.5" y="-655.5" font-family="Segoe UI" font-size="10.00" fill="#2d3436">Legend</text>
 </g>
-<!-- 8d9bf0e919784cfbbc310486aab5d53a -->
+<!-- b8b1361624744af2aa6e8fea2d497c29 -->
 <g id="node1" class="node">
-<title>8d9bf0e919784cfbbc310486aab5d53a</title>
+<title>b8b1361624744af2aa6e8fea2d497c29</title>
 <image xlink:href="C:\Users\frgisber\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/onprem/database\oracle.png" width="100.8px" height="100.8px" preserveAspectRatio="xMinYMin meet" x="80.8" y="-244.4"/>
 <text xml:space="preserve" text-anchor="middle" x="131.2" y="-129.6" font-family="Segoe UI" font-size="10.00" fill="#2d3436">Oracle AI Database 26ai Free</text>
 <text xml:space="preserve" text-anchor="middle" x="131.2" y="-115.35" font-family="Segoe UI" font-size="10.00" fill="#2d3436">DEMO_DW.DIM_DATE</text>
@@ -39,132 +39,132 @@
 <text xml:space="preserve" text-anchor="middle" x="131.2" y="-72.6" font-family="Segoe UI" font-size="10.00" fill="#2d3436">DEMO_DW.DIM_STORE</text>
 <text xml:space="preserve" text-anchor="middle" x="131.2" y="-58.35" font-family="Segoe UI" font-size="10.00" fill="#2d3436">DEMO_DW.FACT_SALES</text>
 </g>
-<!-- 3c7c470b20794ce6821d2effe52bb5b9 -->
+<!-- c662c94206a9499ca1f682f8d4473105 -->
 <g id="node3" class="node">
-<title>3c7c470b20794ce6821d2effe52bb5b9</title>
+<title>c662c94206a9499ca1f682f8d4473105</title>
 <image xlink:href="C:\Users\frgisber\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/azure/network\on-premises-data-gateways.png" width="100.8px" height="100.8px" preserveAspectRatio="xMinYMin meet" x="541.65" y="-329.4"/>
 <text xml:space="preserve" text-anchor="middle" x="592.05" y="-215.2" font-family="Segoe UI" font-size="10.00" fill="#2d3436">On&#45;premises data gateway</text>
-<text xml:space="preserve" text-anchor="middle" x="592.05" y="-200.95" font-family="Segoe UI" font-size="10.00" fill="#2d3436">Oracle Client for Microsoft Tools</text>
+<text xml:space="preserve" text-anchor="middle" x="592.05" y="-200.95" font-family="Segoe UI" font-size="10.00" fill="#2d3436">bundled managed ODP.NET</text>
 </g>
-<!-- 8d9bf0e919784cfbbc310486aab5d53a&#45;&gt;3c7c470b20794ce6821d2effe52bb5b9 -->
+<!-- b8b1361624744af2aa6e8fea2d497c29&#45;&gt;c662c94206a9499ca1f682f8d4473105 -->
 <g id="edge2" class="edge">
-<title>8d9bf0e919784cfbbc310486aab5d53a&#45;&gt;3c7c470b20794ce6821d2effe52bb5b9</title>
+<title>b8b1361624744af2aa6e8fea2d497c29&#45;&gt;c662c94206a9499ca1f682f8d4473105</title>
 <path fill="none" stroke="#424242" d="M181.4,-265.3C181.4,-265.3 530.4,-265.3 530.4,-265.3"/>
 <polygon fill="#424242" stroke="#424242" points="530.4,-268.8 540.4,-265.3 530.4,-261.8 530.4,-268.8"/>
 <text xml:space="preserve" text-anchor="middle" x="394.02" y="-257.65" font-family="Sans-Serif" font-size="13.00" fill="#2d3436">Initial snapshot and LogMiner CDC</text>
 <text xml:space="preserve" text-anchor="middle" x="394.02" y="-241.15" font-family="Sans-Serif" font-size="13.00" fill="#2d3436">Oracle Net over private VNet</text>
 </g>
-<!-- f1cef09a09ac4ecf9ee71012a3d415c9 -->
+<!-- 072fbfce1a974ba4b9e3beab4d542dee -->
 <g id="node2" class="node">
-<title>f1cef09a09ac4ecf9ee71012a3d415c9</title>
+<title>072fbfce1a974ba4b9e3beab4d542dee</title>
 <image xlink:href="C:\Users\frgisber\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/azure/compute\vm-windows.png" width="100.8px" height="100.8px" preserveAspectRatio="xMinYMin meet" x="80.8" y="-500.4"/>
 <text xml:space="preserve" text-anchor="middle" x="131.2" y="-386.35" font-family="Segoe UI" font-size="10.00" fill="#2d3436">demo&#45;fabric&#45;gateway&#45;vm</text>
 </g>
-<!-- f1cef09a09ac4ecf9ee71012a3d415c9&#45;&gt;3c7c470b20794ce6821d2effe52bb5b9 -->
+<!-- 072fbfce1a974ba4b9e3beab4d542dee&#45;&gt;c662c94206a9499ca1f682f8d4473105 -->
 <g id="edge1" class="edge">
-<title>f1cef09a09ac4ecf9ee71012a3d415c9&#45;&gt;3c7c470b20794ce6821d2effe52bb5b9</title>
+<title>072fbfce1a974ba4b9e3beab4d542dee&#45;&gt;c662c94206a9499ca1f682f8d4473105</title>
 <path fill="none" stroke="#424242" d="M130.7,-381.75C130.7,-363.19 130.7,-348.1 130.7,-348.1 130.7,-348.1 530.29,-348.1 530.29,-348.1"/>
 <polygon fill="#424242" stroke="#424242" points="530.29,-351.6 540.29,-348.1 530.29,-344.6 530.29,-351.6"/>
 <text xml:space="preserve" text-anchor="middle" x="394.02" y="-411.15" font-family="Sans-Serif" font-size="13.00" fill="#2d3436">Hosts</text>
 </g>
-<!-- 606cbe0f41184bebabc3490be4133ced -->
+<!-- 2decda6841084e589a3b42b87b3bc92a -->
 <g id="node4" class="node">
-<title>606cbe0f41184bebabc3490be4133ced</title>
+<title>2decda6841084e589a3b42b87b3bc92a</title>
 <image xlink:href="C:\Users\frgisber\repo-oracletofabric\oracletofabric\docs\architecture\icons\fabric_48_color.png" width="100.8px" height="100.8px" preserveAspectRatio="xMinYMin meet" x="850.7" y="-329.4"/>
 <text xml:space="preserve" text-anchor="middle" x="901.1" y="-215.35" font-family="Segoe UI" font-size="10.00" fill="#2d3436">Microsoft Fabric</text>
 </g>
-<!-- 3c7c470b20794ce6821d2effe52bb5b9&#45;&gt;606cbe0f41184bebabc3490be4133ced -->
+<!-- c662c94206a9499ca1f682f8d4473105&#45;&gt;2decda6841084e589a3b42b87b3bc92a -->
 <g id="edge3" class="edge">
-<title>3c7c470b20794ce6821d2effe52bb5b9&#45;&gt;606cbe0f41184bebabc3490be4133ced</title>
+<title>c662c94206a9499ca1f682f8d4473105&#45;&gt;2decda6841084e589a3b42b87b3bc92a</title>
 <path fill="none" stroke="#424242" d="M642.39,-279C642.39,-279 839.27,-279 839.27,-279"/>
 <polygon fill="#424242" stroke="#424242" points="839.27,-282.5 849.27,-279 839.27,-275.5 839.27,-282.5"/>
 <text xml:space="preserve" text-anchor="middle" x="746.58" y="-283.15" font-family="Sans-Serif" font-size="13.00" fill="#2d3436">Outbound HTTPS 443</text>
 </g>
-<!-- 1ed401bfb6294664a433611b9d7bb6ee -->
+<!-- 6c43a1ece3b64c5d83d01222c7bc7a4c -->
 <g id="node5" class="node">
-<title>1ed401bfb6294664a433611b9d7bb6ee</title>
+<title>6c43a1ece3b64c5d83d01222c7bc7a4c</title>
 <image xlink:href="C:\Users\frgisber\repo-oracletofabric\oracletofabric\docs\architecture\icons\group_workspace_64_non-item.png" width="100.8px" height="100.8px" preserveAspectRatio="xMinYMin meet" x="1183.75" y="-329.4"/>
 <text xml:space="preserve" text-anchor="middle" x="1234.15" y="-215.35" font-family="Segoe UI" font-size="10.00" fill="#2d3436">Existing workspace</text>
 </g>
-<!-- 606cbe0f41184bebabc3490be4133ced&#45;&gt;1ed401bfb6294664a433611b9d7bb6ee -->
+<!-- 2decda6841084e589a3b42b87b3bc92a&#45;&gt;6c43a1ece3b64c5d83d01222c7bc7a4c -->
 <g id="edge4" class="edge">
-<title>606cbe0f41184bebabc3490be4133ced&#45;&gt;1ed401bfb6294664a433611b9d7bb6ee</title>
+<title>2decda6841084e589a3b42b87b3bc92a&#45;&gt;6c43a1ece3b64c5d83d01222c7bc7a4c</title>
 <path fill="none" stroke="#757575" stroke-dasharray="5,2" d="M951.32,-279C951.32,-279 1172.28,-279 1172.28,-279"/>
 <polygon fill="#757575" stroke="#757575" points="1172.28,-282.5 1182.28,-279 1172.28,-275.5 1172.28,-282.5"/>
 <text xml:space="preserve" text-anchor="middle" x="1067.63" y="-283.15" font-family="Sans-Serif" font-size="13.00" fill="#2d3436">Workspace control plane</text>
 </g>
-<!-- 1ec5b3a5b30b491c861d6f5d80758589 -->
+<!-- 082daad6c88444e9b5cb08ce7e9ca572 -->
 <g id="node6" class="node">
-<title>1ec5b3a5b30b491c861d6f5d80758589</title>
+<title>082daad6c88444e9b5cb08ce7e9ca572</title>
 <image xlink:href="C:\Users\frgisber\repo-oracletofabric\oracletofabric\docs\architecture\icons\mirrored_generic_database_64_item.png" width="100.8px" height="100.8px" preserveAspectRatio="xMinYMin meet" x="1498.05" y="-329.4"/>
 <text xml:space="preserve" text-anchor="middle" x="1548.45" y="-215.2" font-family="Segoe UI" font-size="10.00" fill="#2d3436">Demo Oracle Mirror</text>
 <text xml:space="preserve" text-anchor="middle" x="1548.45" y="-200.95" font-family="Segoe UI" font-size="10.00" fill="#2d3436">Delta tables in OneLake</text>
 </g>
-<!-- 1ed401bfb6294664a433611b9d7bb6ee&#45;&gt;1ec5b3a5b30b491c861d6f5d80758589 -->
+<!-- 6c43a1ece3b64c5d83d01222c7bc7a4c&#45;&gt;082daad6c88444e9b5cb08ce7e9ca572 -->
 <g id="edge5" class="edge">
-<title>1ed401bfb6294664a433611b9d7bb6ee&#45;&gt;1ec5b3a5b30b491c861d6f5d80758589</title>
+<title>6c43a1ece3b64c5d83d01222c7bc7a4c&#45;&gt;082daad6c88444e9b5cb08ce7e9ca572</title>
 <path fill="none" stroke="#757575" stroke-dasharray="5,2" d="M1284.3,-279C1284.3,-279 1486.71,-279 1486.71,-279"/>
 <polygon fill="#757575" stroke="#757575" points="1486.71,-282.5 1496.71,-279 1486.71,-275.5 1486.71,-282.5"/>
 <text xml:space="preserve" text-anchor="middle" x="1391.3" y="-283.15" font-family="Sans-Serif" font-size="13.00" fill="#2d3436">Creates and manages</text>
 </g>
-<!-- 8d70ec495f9841bb91cfe1687f03aa87 -->
+<!-- ce4df2b1cc0e435e82bbaf75e233c5a3 -->
 <g id="node7" class="node">
-<title>8d70ec495f9841bb91cfe1687f03aa87</title>
+<title>ce4df2b1cc0e435e82bbaf75e233c5a3</title>
 <image xlink:href="C:\Users\frgisber\repo-oracletofabric\oracletofabric\docs\architecture\icons\database_sql_32_filled.png" width="100.8px" height="100.8px" preserveAspectRatio="xMinYMin meet" x="1805.6" y="-471.4"/>
 <text xml:space="preserve" text-anchor="middle" x="1856" y="-357.35" font-family="Segoe UI" font-size="10.00" fill="#2d3436">SQL analytics endpoint</text>
 </g>
-<!-- 1ec5b3a5b30b491c861d6f5d80758589&#45;&gt;8d70ec495f9841bb91cfe1687f03aa87 -->
+<!-- 082daad6c88444e9b5cb08ce7e9ca572&#45;&gt;ce4df2b1cc0e435e82bbaf75e233c5a3 -->
 <g id="edge6" class="edge">
-<title>1ec5b3a5b30b491c861d6f5d80758589&#45;&gt;8d70ec495f9841bb91cfe1687f03aa87</title>
+<title>082daad6c88444e9b5cb08ce7e9ca572&#45;&gt;ce4df2b1cc0e435e82bbaf75e233c5a3</title>
 <path fill="none" stroke="#424242" d="M1598.55,-357.2C1598.55,-357.2 1794.15,-357.2 1794.15,-357.2"/>
 <polygon fill="#424242" stroke="#424242" points="1794.15,-360.7 1804.15,-357.2 1794.15,-353.7 1794.15,-360.7"/>
 <text xml:space="preserve" text-anchor="middle" x="1702.23" y="-396.15" font-family="Sans-Serif" font-size="13.00" fill="#2d3436">Native SQL access</text>
 </g>
-<!-- 32c03aaaea2f4c2485ef95fe03cc75c4 -->
+<!-- 367cca49c8ed4d71abfa42059de0389f -->
 <g id="node8" class="node">
-<title>32c03aaaea2f4c2485ef95fe03cc75c4</title>
+<title>367cca49c8ed4d71abfa42059de0389f</title>
 <image xlink:href="C:\Users\frgisber\repo-oracletofabric\oracletofabric\docs\architecture\icons\lakehouse_64_item.png" width="100.8px" height="100.8px" preserveAspectRatio="xMinYMin meet" x="1805.6" y="-273.4"/>
-<text xml:space="preserve" text-anchor="middle" x="1856" y="-159.2" font-family="Segoe UI" font-size="10.00" fill="#2d3436">Demo Lakehouse</text>
-<text xml:space="preserve" text-anchor="middle" x="1856" y="-144.95" font-family="Segoe UI" font-size="10.00" fill="#2d3436">OneLake shortcuts</text>
+<text xml:space="preserve" text-anchor="middle" x="1856" y="-159.2" font-family="Segoe UI" font-size="10.00" fill="#2d3436">DemoLakehouse</text>
+<text xml:space="preserve" text-anchor="middle" x="1856" y="-144.95" font-family="Segoe UI" font-size="10.00" fill="#2d3436">DEMO_DW shortcuts</text>
 </g>
-<!-- 1ec5b3a5b30b491c861d6f5d80758589&#45;&gt;32c03aaaea2f4c2485ef95fe03cc75c4 -->
+<!-- 082daad6c88444e9b5cb08ce7e9ca572&#45;&gt;367cca49c8ed4d71abfa42059de0389f -->
 <g id="edge7" class="edge">
-<title>1ec5b3a5b30b491c861d6f5d80758589&#45;&gt;32c03aaaea2f4c2485ef95fe03cc75c4</title>
+<title>082daad6c88444e9b5cb08ce7e9ca572&#45;&gt;367cca49c8ed4d71abfa42059de0389f</title>
 <path fill="none" stroke="#424242" d="M1598.55,-251C1598.55,-251 1794.15,-251 1794.15,-251"/>
 <polygon fill="#424242" stroke="#424242" points="1794.15,-254.5 1804.15,-251 1794.15,-247.5 1794.15,-254.5"/>
 <text xml:space="preserve" text-anchor="middle" x="1702.23" y="-271.65" font-family="Sans-Serif" font-size="13.00" fill="#2d3436">OneLake shortcuts</text>
 <text xml:space="preserve" text-anchor="middle" x="1702.23" y="-255.15" font-family="Sans-Serif" font-size="13.00" fill="#2d3436">no second data copy</text>
 </g>
-<!-- 85e3397c3b2e4e14b6bc94053e9392fe -->
+<!-- a066557414b445789d159bddeaab5a62 -->
 <g id="node9" class="node">
-<title>85e3397c3b2e4e14b6bc94053e9392fe</title>
+<title>a066557414b445789d159bddeaab5a62</title>
 <image xlink:href="C:\Users\frgisber\AppData\Local\Programs\Python\Python312\Lib\site-packages\resources/onprem/client\client.png" width="100.8px" height="100.8px" preserveAspectRatio="xMinYMin meet" x="2071.9" y="-387.4"/>
 <text xml:space="preserve" text-anchor="middle" x="2122.3" y="-273.35" font-family="Segoe UI" font-size="10.00" fill="#2d3436">SQL and Spark consumers</text>
 </g>
-<!-- 8d70ec495f9841bb91cfe1687f03aa87&#45;&gt;85e3397c3b2e4e14b6bc94053e9392fe -->
+<!-- ce4df2b1cc0e435e82bbaf75e233c5a3&#45;&gt;a066557414b445789d159bddeaab5a62 -->
 <g id="edge8" class="edge">
-<title>8d70ec495f9841bb91cfe1687f03aa87&#45;&gt;85e3397c3b2e4e14b6bc94053e9392fe</title>
+<title>ce4df2b1cc0e435e82bbaf75e233c5a3&#45;&gt;a066557414b445789d159bddeaab5a62</title>
 <path fill="none" stroke="#424242" d="M1906.09,-379C1906.09,-379 2060.47,-379 2060.47,-379"/>
 <polygon fill="#424242" stroke="#424242" points="2060.47,-382.5 2070.47,-379 2060.47,-375.5 2060.47,-382.5"/>
 <text xml:space="preserve" text-anchor="middle" x="1989.15" y="-392.15" font-family="Sans-Serif" font-size="13.00" fill="#2d3436">T&#45;SQL</text>
 </g>
-<!-- 32c03aaaea2f4c2485ef95fe03cc75c4&#45;&gt;85e3397c3b2e4e14b6bc94053e9392fe -->
+<!-- 367cca49c8ed4d71abfa42059de0389f&#45;&gt;a066557414b445789d159bddeaab5a62 -->
 <g id="edge9" class="edge">
-<title>32c03aaaea2f4c2485ef95fe03cc75c4&#45;&gt;85e3397c3b2e4e14b6bc94053e9392fe</title>
+<title>367cca49c8ed4d71abfa42059de0389f&#45;&gt;a066557414b445789d159bddeaab5a62</title>
 <path fill="none" stroke="#424242" d="M1906.09,-287.2C1906.09,-287.2 2060.47,-287.2 2060.47,-287.2"/>
 <polygon fill="#424242" stroke="#424242" points="2060.47,-290.7 2070.47,-287.2 2060.47,-283.7 2060.47,-290.7"/>
 <text xml:space="preserve" text-anchor="middle" x="1989.15" y="-291.15" font-family="Sans-Serif" font-size="13.00" fill="#2d3436">Spark and SQL</text>
 </g>
-<!-- b09c64e960414f50a026a17f6b33ca6c -->
+<!-- 3e90adfb2e9949099e68546e0cfe16f3 -->
 <g id="node10" class="node">
-<title>b09c64e960414f50a026a17f6b33ca6c</title>
+<title>3e90adfb2e9949099e68546e0cfe16f3</title>
 <polygon fill="#ffffff" stroke="#9e9e9e" points="240.4,-639.02 16,-639.02 16,-564.98 246.4,-564.98 246.4,-633.02 240.4,-639.02"/>
 <polyline fill="none" stroke="#9e9e9e" points="240.4,-639.02 240.4,-633.02"/>
 <polyline fill="none" stroke="#9e9e9e" points="246.4,-633.02 240.4,-633.02"/>
 <text xml:space="preserve" text-anchor="middle" x="131.2" y="-618.95" font-family="Segoe UI" font-size="9.00" fill="#2d3436">Solid: data path</text>
 <text xml:space="preserve" text-anchor="middle" x="131.2" y="-606.2" font-family="Segoe UI" font-size="9.00" fill="#2d3436">Dashed: Fabric control plane</text>
-<text xml:space="preserve" text-anchor="middle" x="131.2" y="-593.45" font-family="Segoe UI" font-size="9.00" fill="#2d3436">Demo Oracle Mirror is the replication target</text>
-<text xml:space="preserve" text-anchor="middle" x="131.2" y="-580.7" font-family="Segoe UI" font-size="9.00" fill="#2d3436">Demo Lakehouse reads through shortcuts</text>
+<text xml:space="preserve" text-anchor="middle" x="131.2" y="-593.45" font-family="Segoe UI" font-size="9.00" fill="#2d3436">DemoOracleMirror is the replication target</text>
+<text xml:space="preserve" text-anchor="middle" x="131.2" y="-580.7" font-family="Segoe UI" font-size="9.00" fill="#2d3436">DemoLakehouse reads schema&#45;aware shortcuts</text>
 </g>
 </g>
 </svg>

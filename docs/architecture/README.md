@@ -1,6 +1,6 @@
 # Architecture diagram pack
 
-These files describe the target Oracle to Fabric Demo environment. Nothing in this folder represents deployed Azure or Fabric resources.
+These files describe the deployed Oracle to Fabric Demo environment, validated on September 15, 2026.
 
 ## Views
 
@@ -15,7 +15,7 @@ The SVG files are the primary documentation output. PNG files are included for p
 
 ## Source inventory
 
-[`architecture-inventory.yaml`](architecture-inventory.yaml) is the source of truth for every node and connection. Tenant and subscription identifiers are deliberately not stored. Values generated at deployment time remain explicit placeholders.
+[`architecture-inventory.yaml`](architecture-inventory.yaml) is the source of truth for every node and connection. Tenant and subscription identifiers are deliberately not stored.
 
 ## Render locally
 
@@ -32,13 +32,12 @@ py -m pip install -r .\docs\architecture\requirements.txt
 py .\docs\architecture\render.py
 ```
 
-## Known assumptions
+## Deployed notes
 
-- The design is for a non-production Demo.
+- The environment is a non-production Demo.
 - Azure Bastion uses the free Developer SKU.
 - No VPN Gateway or `AzureBastionSubnet` is deployed.
 - Neither VM has a public IP.
 - One outbound-only public IP is attached to NAT Gateway because the Fabric gateway requires egress.
-- The gateway uses HTTPS mode when the final policy permits it.
-
-See the inventory for the full list of unresolved decisions.
+- `DemoLakehouse` is schema-enabled and exposes the five shortcuts under `DEMO_DW`.
+- The gateway uses its bundled managed ODP.NET driver for Oracle mirroring.

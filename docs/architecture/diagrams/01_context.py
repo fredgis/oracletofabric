@@ -1,4 +1,4 @@
-"""Target context view for the Oracle to Fabric Demo."""
+"""Deployed context view for the Oracle to Fabric Demo."""
 
 import sys
 from pathlib import Path
@@ -30,7 +30,7 @@ from common import (
 
 
 with Diagram(
-    "Oracle to Fabric Demo\n01 Context view | Target architecture, not deployed",
+    "Oracle to Fabric Demo\n01 Context view | Deployed and validated",
     filename=output_path("01-context"),
     show=False,
     direction="LR",
@@ -63,7 +63,7 @@ with Diagram(
         fabric = icon("Microsoft Fabric", "fabric_48_color.png")
         workspace = icon("Existing workspace", "group_workspace_64_non-item.png")
         mirrored_db = icon("Demo Oracle Mirror", "mirrored_generic_database_64_item.png")
-        lakehouse = icon("Demo Lakehouse", "lakehouse_64_item.png")
+        lakehouse = icon("DemoLakehouse\nschema-enabled", "lakehouse_64_item.png")
 
     admin >> Edge(label="HTTPS 443", style="dashed", color="#757575") >> portal
     portal >> Edge(label="Browser session", style="dashed", color="#757575") >> bastion

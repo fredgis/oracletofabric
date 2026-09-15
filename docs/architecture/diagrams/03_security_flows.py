@@ -30,7 +30,7 @@ from common import (
 
 
 with Diagram(
-    "Oracle to Fabric Demo\n03 Security flows | Target controls",
+    "Oracle to Fabric Demo\n03 Security flows | Deployed controls",
     filename=output_path("03-security-flows"),
     show=False,
     direction="LR",

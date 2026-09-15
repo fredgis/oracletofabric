@@ -40,14 +40,14 @@ with Diagram(
             "DEMO_DW.DIM_STORE\nDEMO_DW.FACT_SALES"
         )
         gateway_vm = VMWindows("demo-fabric-gateway-vm")
-        opdg = OnPremisesDataGateways("On-premises data gateway\nOracle Client for Microsoft Tools")
+        opdg = OnPremisesDataGateways("On-premises data gateway\nbundled managed ODP.NET")
 
     with Cluster("Microsoft Fabric | Existing F16 capacity", graph_attr=FABRIC_ATTR):
         fabric = icon("Microsoft Fabric", "fabric_48_color.png")
         workspace = icon("Existing workspace", "group_workspace_64_non-item.png")
         mirrored_db = icon("Demo Oracle Mirror\nDelta tables in OneLake", "mirrored_generic_database_64_item.png")
         sql_endpoint = icon("SQL analytics endpoint", "database_sql_32_filled.png")
-        lakehouse = icon("Demo Lakehouse\nOneLake shortcuts", "lakehouse_64_item.png")
+        lakehouse = icon("DemoLakehouse\nDEMO_DW shortcuts", "lakehouse_64_item.png")
 
     consumers = Client("SQL and Spark consumers")
 
@@ -62,4 +62,4 @@ with Diagram(
     lakehouse >> Edge(label="Spark and SQL") >> consumers
 
     with Cluster("Legend", graph_attr=LEGEND_ATTR):
-        legend("Solid: data path\nDashed: Fabric control plane\nDemo Oracle Mirror is the replication target\nDemo Lakehouse reads through shortcuts")
+        legend("Solid: data path\nDashed: Fabric control plane\nDemoOracleMirror is the replication target\nDemoLakehouse reads schema-aware shortcuts")

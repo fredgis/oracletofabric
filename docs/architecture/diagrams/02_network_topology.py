@@ -1,4 +1,4 @@
-"""Target Azure network topology for the Oracle to Fabric Demo."""
+"""Deployed Azure network topology for the Oracle to Fabric Demo."""
 
 import sys
 from pathlib import Path
@@ -39,7 +39,7 @@ from common import (
 
 
 with Diagram(
-    "Oracle to Fabric Demo\n02 Network topology | Central US target",
+    "Oracle to Fabric Demo\n02 Network topology | Deployed in Central US",
     filename=output_path("02-network-topology"),
     show=False,
     direction="LR",

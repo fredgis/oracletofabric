@@ -1,7 +1,7 @@
 metadata:
   title: Oracle to Fabric Demo
-  view_type: target
-  deployment_status: not_deployed
+  view_type: deployed
+  deployment_status: deployed_and_validated
   verified_on: 2026-09-14
   sensitive_identifiers_stored: false
   source_of_truth:
@@ -42,7 +42,7 @@ naming:
   nat_gateway: demo-egress-nat
   key_vault: demo-oracle-kv-unique
   mirrored_database: Demo Oracle Mirror
-  lakehouse: Demo Lakehouse
+  lakehouse: DemoLakehouse
   oracle_schema: DEMO_DW
 
 network:
@@ -50,7 +50,7 @@ network:
     name: demo-oracle-vnet
     address_space: 10.60.0.0/16
     overlaps_existing_azure_vnets: false
-    status: planned
+    status: deployed
   peerings: []
   vpn_gateways: []
   subnets:
@@ -94,7 +94,7 @@ network:
   private_endpoints:
     - service: Azure Key Vault
       subnet: snet-demo-private-endpoints
-      status: planned
+      status: deployed
     - service: Microsoft Fabric
       status: not_used_for_oracle_mirroring
   dns:
@@ -110,24 +110,24 @@ security_controls:
     internet_to_oracle_listener: blocked
     nat_public_ip_to_workloads: impossible
   subnet_controls:
-    oracle_subnet_nsg: planned
-    gateway_subnet_nsg: planned
-    private_endpoint_subnet_policy: planned
-    denied_flow_logging: planned
+    oracle_subnet_nsg: deployed
+    gateway_subnet_nsg: deployed
+    private_endpoint_subnet_policy: deployed
+    denied_flow_logging: available
   secrets:
     store: Azure Key Vault
     generation: deployment_time
     committed_to_repository: false
     oracle_credentials: generated
     gateway_recovery_key: generated
-    gateway_certificate: generated
+    gateway_client_secret: generated
   identities:
     deployment_identity:
-      type: certificate_backed_service_principal
-      certificate_store: Azure Key Vault
+      type: service_principal
+      credential_store: Azure Key Vault
       repository_secret_required: false
-    oracle_vm_managed_identity: planned
-    gateway_vm_managed_identity: planned
+    oracle_vm_managed_identity: deployed
+    gateway_vm_managed_identity: deployed
     fabric_service_principal_settings_verified: true
     oracle_mirroring_account:
       authentication: basic
@@ -153,7 +153,7 @@ components:
       size: Standard_D2as_v7
     - id: oracle-data-disk
       type: azure_managed_disk
-      size: planned
+      size: 64 GB
     - id: gateway-vm
       name: demo-fabric-gateway-vm
       type: azure_windows_vm
@@ -200,8 +200,9 @@ components:
     - id: sql-analytics-endpoint
       type: sql_analytics_endpoint
     - id: lakehouse
-      name: Demo Lakehouse
+      name: DemoLakehouse
       type: fabric_lakehouse
+      schemas_enabled: true
     - id: onelake-shortcuts
       type: shortcuts
       access: read_only_source
@@ -284,14 +285,14 @@ traffic_flows:
     direction: private
     protocol: HTTPS
     port: 443
-    purpose: Retrieve generated secrets and certificate
+    purpose: Retrieve generated secrets and gateway credentials
   - id: mirror-to-lakehouse
     source: mirrored-database
     destination: lakehouse
     direction: onelake
     protocol: OneLake shortcut
     port: service_managed
-    purpose: Read mirrored tables from Demo Lakehouse
+    purpose: Read mirrored tables from DemoLakehouse
 
 trust_boundaries:
   - name: Azure management plane
@@ -314,7 +315,7 @@ trust_boundaries:
     contains:
       - Demo Oracle Mirror
       - sql-analytics-endpoint
-      - Demo Lakehouse
+      - DemoLakehouse
 
 confirmed_facts:
   - Azure Bastion Developer is free and requires no public IP or AzureBastionSubnet.
@@ -326,7 +327,9 @@ confirmed_facts:
   - Oracle Mirroring requires a standard on-premises data gateway.
   - Fabric tenant settings allow service principals to call the required APIs.
   - Fabric creates a Mirrored Database in OneLake and a SQL analytics endpoint.
-  - Demo Lakehouse consumes mirrored tables through OneLake shortcuts.
+  - DemoLakehouse consumes mirrored tables through OneLake shortcuts under the DEMO_DW schema.
+  - Initial snapshot row counts match Oracle for all five tables.
+  - Live insert, update, and delete changes replicate without reseeding.
 
 assumptions:
   - This is a non-production Demo.
