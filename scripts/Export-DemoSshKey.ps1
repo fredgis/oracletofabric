@@ -1,8 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$StatePath = "$env:LOCALAPPDATA\OracleToFabricDemo\state.json",
-    [string]$OutputPath = "$env:TEMP\demo-oracle-ssh.key",
-    [switch]$OpenPortal
+    [string]$OutputPath = "$env:TEMP\demo-oracle-ssh.key"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -29,13 +28,6 @@ if ($env:OS -eq 'Windows_NT') {
     }
 }
 
-$portalUri = "https://portal.azure.com/#@$($state.tenantId)/resource/subscriptions/$($state.subscriptionId)/resourceGroups/$($state.resourceGroupName)/providers/Microsoft.Compute/virtualMachines/$($state.oracleVmName)/connect"
-
 Write-Output 'SSH_USERNAME=demoadmin'
 Write-Output "SSH_PRIVATE_KEY=$OutputPath"
-Write-Output "PORTAL_URL=$portalUri"
 Write-Output "REMOVE_AFTER_USE=Remove-Item -LiteralPath '$OutputPath'"
-
-if ($OpenPortal) {
-    Start-Process $portalUri
-}

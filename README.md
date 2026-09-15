@@ -57,13 +57,13 @@ When you want a real SQL*Plus session, connect **directly to `demo-oracle-vm` th
 <details>
 <summary>Open an interactive SQL session with Bastion</summary>
 
-Export the DPAPI-protected deployment key and open the Oracle VM in Azure Portal:
+Export the DPAPI-protected deployment key:
 
 ```powershell
-.\scripts\Export-DemoSshKey.ps1 -OpenPortal
+.\scripts\Export-DemoSshKey.ps1
 ```
 
-In the Bastion connection pane:
+Then open `demo-oracle-vm` in Azure Portal and select **Connect > Bastion**:
 
 ```text
 Authentication: SSH private key from local file
