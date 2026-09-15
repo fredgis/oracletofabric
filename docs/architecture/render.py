@@ -1,4 +1,4 @@
-"""Render every architecture view with a locally installed Graphviz binary."""
+"""Render architecture views with locally installed Graphviz and Edge exporters."""
 
 import base64
 import mimetypes

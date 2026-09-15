@@ -23,8 +23,8 @@ This repo deploys Oracle AI Database Free on a private Azure Linux VM and mirror
 ## Architecture
 
 <p align="center">
-  <a href="docs/architecture/rendered/00-readme-overview.svg">
-    <img src="docs/architecture/rendered/00-readme-overview.png" alt="Deployed Oracle to Fabric architecture" width="100%">
+  <a href="docs/architecture/rendered/00-deployed-architecture.svg">
+    <img src="docs/architecture/rendered/00-deployed-architecture.png" alt="Deployed Oracle to Fabric architecture" width="100%">
   </a>
 </p>
 
@@ -40,8 +40,8 @@ This is the deployed environment in `FGI-ORACLE`. Both VMs are private. Bastion 
 <details>
 <summary>Open the complete architecture pack</summary>
 
-[Overview SVG](docs/architecture/rendered/00-readme-overview.svg) ·
-[Overview PDF](docs/architecture/rendered/00-readme-overview.pdf) ·
+[Overview SVG](docs/architecture/rendered/00-deployed-architecture.svg) ·
+[Overview PDF](docs/architecture/rendered/00-deployed-architecture.pdf) ·
 [Context view](docs/architecture/rendered/01-context.png) ·
 [Network view](docs/architecture/rendered/02-network-topology.png) ·
 [Security view](docs/architecture/rendered/03-security-flows.png) ·
