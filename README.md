@@ -82,42 +82,27 @@ Start with these commands:
 
 ```sql
 -- Confirm the current pluggable database.
-show con_name
+select sys_context('USERENV', 'CON_NAME') as container_name from dual;
 
 -- List non-system schemas.
-select username
-from dba_users
-where oracle_maintained = 'N'
-order by username;
+select username from dba_users where oracle_maintained = 'N' order by username;
 
 -- List the five demo tables.
-select table_name
-from all_tables
-where owner = 'DEMO_DW'
-order by table_name;
+select table_name from all_tables where owner = 'DEMO_DW' order by table_name;
 
 -- Show the columns and data types.
-desc DEMO_DW.FACT_SALES
+select column_id, column_name, data_type, data_length, nullable from all_tab_columns where owner = 'DEMO_DW' and table_name = 'FACT_SALES' order by column_id;
 
 -- Count the sales rows.
 select count(*) from DEMO_DW.FACT_SALES;
 
 -- Read ten recent rows.
-select
-  SALES_KEY,
-  DATE_KEY,
-  CUSTOMER_KEY,
-  PRODUCT_KEY,
-  QUANTITY,
-  SALES_AMOUNT
-from DEMO_DW.FACT_SALES
-order by SALES_KEY desc
-fetch first 10 rows only;
+select SALES_KEY, DATE_KEY, CUSTOMER_KEY, PRODUCT_KEY, QUANTITY, SALES_AMOUNT from DEMO_DW.FACT_SALES order by SALES_KEY desc fetch first 10 rows only;
 ```
 
 The table query returns `DIM_CUSTOMER`, `DIM_DATE`, `DIM_PRODUCT`, `DIM_STORE`, and `FACT_SALES`.
 
-SQL statements such as `select`, `insert`, and `commit` end with `;`. SQL*Plus commands such as `show`, `desc`, and `exit` do not need one.
+Every SQL statement above is on one line and ends with `;`. `exit` is a SQL*Plus command, so it is the only command below without one.
 
 Leave Oracle with:
 
@@ -156,25 +141,12 @@ sudo demo-sqlplus
 From the `SQL>` prompt:
 
 ```sql
-insert into DEMO_DW.FACT_SALES (
-  SALES_KEY, DATE_KEY, CUSTOMER_KEY, PRODUCT_KEY, STORE_KEY,
-  QUANTITY, UNIT_PRICE, SALES_AMOUNT, UPDATED_AT
-)
-select
-  to_number(to_char(systimestamp, 'YYYYMMDDHH24MISSFF3')),
-  20250102, 2, 2, 2, 1, 19.95, 19.95, sysdate
-from dual;
-
+insert into DEMO_DW.FACT_SALES (SALES_KEY, DATE_KEY, CUSTOMER_KEY, PRODUCT_KEY, STORE_KEY, QUANTITY, UNIT_PRICE, SALES_AMOUNT, UPDATED_AT) select to_number(to_char(systimestamp, 'YYYYMMDDHH24MISSFF3')), 20250102, 2, 2, 2, 1, 19.95, 19.95, sysdate from dual;
 commit;
-
 alter session set container=CDB$ROOT;
 alter system archive log current;
 alter session set container=FREEPDB1;
-
-select SALES_KEY, SALES_AMOUNT, UPDATED_AT
-from DEMO_DW.FACT_SALES
-order by SALES_KEY desc
-fetch first 1 row only;
+select SALES_KEY, SALES_AMOUNT, UPDATED_AT from DEMO_DW.FACT_SALES order by SALES_KEY desc fetch first 1 row only;
 ```
 
 Fabric Mirroring picks up the archived redo log. You can query the same row in `DemoLakehouse` under `DEMO_DW.FACT_SALES`.
