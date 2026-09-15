@@ -6,6 +6,7 @@ These files describe the deployed Oracle to Fabric Demo environment, validated o
 
 | View | Purpose |
 | --- | --- |
+| `00-readme-overview` | Readable deployed overview shown near the top of the repository README |
 | `01-context` | Administrator, Bastion Developer, private Azure workloads, outbound NAT, Oracle, and Fabric |
 | `02-network-topology` | Tenant, subscription, Central US VNet, Demo subnets, DNS, and outbound access |
 | `03-security-flows` | Allowed private flows, required outbound flows, and blocked Internet ingress |

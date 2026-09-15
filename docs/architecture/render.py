@@ -13,6 +13,7 @@ ARCHITECTURE_DIR = Path(__file__).resolve().parent
 DIAGRAMS_DIR = ARCHITECTURE_DIR / "diagrams"
 RENDERED_DIR = ARCHITECTURE_DIR / "rendered"
 DEFAULT_SOURCES = (
+    "00_readme_overview.py",
     "01_context.py",
     "02_network_topology.py",
     "03_security_flows.py",
@@ -47,7 +48,10 @@ def inline_svg_images(svg_path: Path) -> None:
     content = svg_path.read_text(encoding="utf-8")
 
     def replace_image(match: re.Match[str]) -> str:
-        image_path = Path(match.group("href"))
+        href = match.group("href")
+        if href.startswith("data:"):
+            return match.group(0)
+        image_path = Path(href)
         if not image_path.is_file():
             raise FileNotFoundError(
                 f"SVG image reference cannot be embedded: {image_path}"

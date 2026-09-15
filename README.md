@@ -10,15 +10,44 @@
 </p>
 
 <p align="center">
+  <a href="#architecture">Architecture</a> ·
   <a href="#run-the-demo">Run the demo</a> ·
   <a href="#connect-to-oracle">Connect to Oracle</a> ·
-  <a href="#architecture">Architecture</a> ·
   <a href="#deploy-from-scratch">Deploy</a>
 </p>
 
 # Oracle to Fabric Demo
 
 This repo deploys Oracle AI Database Free on a private Azure Linux VM and mirrors five tables into Microsoft Fabric. The Windows VM beside it runs the gateway service. It is not where you work with Oracle.
+
+## Architecture
+
+<p align="center">
+  <a href="docs/architecture/rendered/00-readme-overview.svg">
+    <img src="docs/architecture/rendered/00-readme-overview.png" alt="Deployed Oracle to Fabric architecture" width="100%">
+  </a>
+</p>
+
+This is the deployed environment in `FGI-ORACLE`. Both VMs are private. Bastion handles administration, the Windows gateway reads Oracle on port `1521`, and outbound NAT carries the gateway traffic to Fabric.
+
+| Location | Role |
+| --- | --- |
+| `demo-oracle-vm` | Oracle Linux 9.8, Oracle AI Database Free, SQL*Plus, data files and archive logs |
+| `demo-fabric-gateway-vm` | Windows Server 2022, on-premises data gateway, managed Oracle provider |
+| `DemoOracleMirror` | Fabric Mirrored Database receiving the snapshot and Oracle CDC |
+| `DemoLakehouse` | Schema-enabled Lakehouse with five shortcuts under `Tables/DEMO_DW` |
+
+<details>
+<summary>Open the complete architecture pack</summary>
+
+[Overview SVG](docs/architecture/rendered/00-readme-overview.svg) ·
+[Overview PDF](docs/architecture/rendered/00-readme-overview.pdf) ·
+[Context view](docs/architecture/rendered/01-context.png) ·
+[Network view](docs/architecture/rendered/02-network-topology.png) ·
+[Security view](docs/architecture/rendered/03-security-flows.png) ·
+[Data flow](docs/architecture/rendered/04-data-flows.png)
+
+</details>
 
 ## Run the demo
 
@@ -158,47 +187,6 @@ Delete the exported SSH key after the Bastion session starts:
 ```powershell
 Remove-Item "$env:TEMP\demo-oracle-ssh.key"
 ```
-
-## Architecture
-
-```mermaid
-flowchart LR
-    User[Administrator] -->|Bastion SSH| OracleVM[Oracle Linux VM]
-    User -->|Bastion RDP| GatewayVM[Windows gateway VM]
-    GatewayVM -->|Oracle Net 1521<br/>private VNet| OracleVM
-    GatewayVM -->|HTTPS 443<br/>outbound only| Mirror[DemoOracleMirror]
-    Mirror -->|OneLake shortcut| Lakehouse[DemoLakehouse<br/>DEMO_DW]
-
-    classDef oracle fill:#FDE8E7,stroke:#C74634,color:#5B1A12,stroke-width:2px;
-    classDef azure fill:#E7F3FF,stroke:#0078D4,color:#083B66,stroke-width:2px;
-    classDef fabric fill:#F2E9FF,stroke:#742774,color:#3B1747,stroke-width:2px;
-
-    class OracleVM oracle;
-    class User,GatewayVM azure;
-    class Mirror,Lakehouse fabric;
-```
-
-### What runs where
-
-| Location | Role |
-| --- | --- |
-| `demo-oracle-vm` | Oracle Linux 9.8, Oracle AI Database Free, SQL*Plus, data files and archive logs |
-| `demo-fabric-gateway-vm` | Windows Server 2022, on-premises data gateway, managed Oracle provider |
-| `DemoOracleMirror` | Fabric Mirrored Database receiving the snapshot and Oracle CDC |
-| `DemoLakehouse` | Schema-enabled Lakehouse with five shortcuts under `Tables/DEMO_DW` |
-
-<details>
-<summary>Open the detailed architecture diagram</summary>
-
-[![Detailed Oracle to Fabric architecture](docs/architecture/rendered/01-context.png)](docs/architecture/rendered/01-context.png)
-
-[Self-contained SVG](docs/architecture/rendered/01-context.svg) ·
-[PDF](docs/architecture/rendered/01-context.pdf) ·
-[Network view](docs/architecture/rendered/02-network-topology.png) ·
-[Security view](docs/architecture/rendered/03-security-flows.png) ·
-[Data flow](docs/architecture/rendered/04-data-flows.png)
-
-</details>
 
 ## Deploy from scratch
 

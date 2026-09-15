@@ -2,10 +2,10 @@ metadata:
   title: Oracle to Fabric Demo
   view_type: deployed
   deployment_status: deployed_and_validated
-  verified_on: 2026-09-14
+  verified_on: 2026-09-15
   sensitive_identifiers_stored: false
   source_of_truth:
-    - ../../../README.md
+    - ../../README.md
     - https://www.oracle.com/database/free/
     - https://learn.microsoft.com/en-us/azure/bastion/quickstart-host-portal
     - https://learn.microsoft.com/en-us/fabric/mirroring/oracle
@@ -25,7 +25,7 @@ scope:
   resource_group:
     name: FGI-ORACLE
     exists: true
-    empty: true
+    empty: false
     locked: false
   fabric:
     workspace: FGI-ORACLE
@@ -41,7 +41,7 @@ naming:
   bastion: demo-bastion
   nat_gateway: demo-egress-nat
   key_vault: demo-oracle-kv-unique
-  mirrored_database: Demo Oracle Mirror
+  mirrored_database: DemoOracleMirror
   lakehouse: DemoLakehouse
   oracle_schema: DEMO_DW
 
@@ -77,6 +77,7 @@ network:
       architecture: shared_pool
       cost: free
       intended_use: dev_test
+      client_ip_acl: not_used
   egress:
     method: Azure NAT Gateway
     name: demo-egress-nat
@@ -194,7 +195,7 @@ components:
       type: workspace
       capacity: active_F16
     - id: mirrored-database
-      name: Demo Oracle Mirror
+      name: DemoOracleMirror
       type: oracle_mirrored_database
       storage: OneLake
     - id: sql-analytics-endpoint
@@ -320,6 +321,7 @@ trust_boundaries:
 confirmed_facts:
   - Azure Bastion Developer is free and requires no public IP or AzureBastionSubnet.
   - Bastion Developer can be created through Azure CLI without a portal deployment step.
+  - Bastion access requires Azure authorization and the VM credential; no client IP ACL is configured.
   - No VPN Gateway is required.
   - Neither workload VM has a public IP.
   - One outbound-only NAT public IP is required because no shared egress exists.
@@ -342,8 +344,4 @@ external_failure_conditions:
   - Conditional Access requires a new interactive challenge.
   - Azure, Oracle, or Fabric service availability blocks automation.
 
-unresolved_at_deployment:
-  - Exact Oracle RPM version and checksum
-  - Generated globally unique Key Vault name
-  - Final Oracle listener port
-  - Final administrator source IP for Bastion Developer ACL
+unresolved_at_deployment: []
