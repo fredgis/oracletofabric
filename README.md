@@ -79,7 +79,8 @@ This one is technically a test. It checks SQL*Plus, analytic functions, hierarch
 .\tests\Invoke-DemoSqlFunTest.ps1
 ```
 
-#### From Oracle SQL to Fabric Python
+<details>
+<summary>From Oracle SQL to Fabric Python</summary>
 
 The same mirrored sales data, first rendered inside Oracle, then in a Fabric PySpark notebook.
 
@@ -101,6 +102,8 @@ The same mirrored sales data, first rendered inside Oracle, then in a Fabric PyS
     </td>
   </tr>
 </table>
+
+</details>
 
 <details>
 <summary>Run the two SQL statements directly</summary>
