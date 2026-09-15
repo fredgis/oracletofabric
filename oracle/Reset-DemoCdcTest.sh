@@ -14,30 +14,22 @@ whenever sqlerror exit sql.sqlcode rollback
 alter session set container=FREEPDB1;
 
 delete from DEMO_DW.FACT_SALES
-where sales_key = 900000000000002;
+where sales_key > 25000;
 
 merge into DEMO_DW.FACT_SALES target
 using (
   select
-    24998 sales_key,
-    to_number(to_char(date '2025-01-01' + mod(24997, 731), 'YYYYMMDD')) date_key,
-    mod(24998 * 7, 500) + 1 customer_key,
-    mod(24998 * 11, 100) + 1 product_key,
-    mod(24998 * 13, 20) + 1 store_key,
-    mod(24998, 8) + 1 quantity,
-    round(10 + mod(24998 * 31, 900) / 10, 2) unit_price
+    level sales_key,
+    to_number(to_char(date '2025-01-01' + mod(level - 1, 731), 'YYYYMMDD')) date_key,
+    mod(level * 7, 500) + 1 customer_key,
+    mod(level * 11, 100) + 1 product_key,
+    mod(level * 13, 20) + 1 store_key,
+    mod(level, 8) + 1 quantity,
+    round(10 + mod(level * 31, 900) / 10, 2) unit_price
   from dual
+  connect by level <= 25000
 ) source
 on (target.sales_key = source.sales_key)
-when matched then update set
-  target.date_key = source.date_key,
-  target.customer_key = source.customer_key,
-  target.product_key = source.product_key,
-  target.store_key = source.store_key,
-  target.quantity = source.quantity,
-  target.unit_price = source.unit_price,
-  target.sales_amount = round(source.quantity * source.unit_price, 2),
-  target.updated_at = sysdate
 when not matched then insert (
   sales_key,
   date_key,

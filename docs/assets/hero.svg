@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-labelledby="title description">
+  <!-- Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4 -->
+  <!-- Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: Cobalt · enrichment: Tier B custom SVG -->
+  <title id="title">Oracle to Fabric private replication demo</title>
+  <desc id="description">Oracle AI Database Free on a private Azure Linux VM replicates through a Windows gateway VM into a Microsoft Fabric mirrored database and Lakehouse.</desc>
+  <style>
+    :root {
+      --paper: oklch(17% 0.035 255);
+      --paper-raised: oklch(22% 0.04 255);
+      --ink: oklch(96% 0.01 250);
+      --muted: oklch(76% 0.025 250);
+      --rule: oklch(42% 0.045 250);
+      --oracle: oklch(65% 0.19 30);
+      --azure: oklch(67% 0.17 245);
+      --fabric: oklch(70% 0.16 315);
+    }
+    .display {
+      font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+    .body {
+      font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
+    }
+    .mono {
+      font-family: "Cascadia Mono", Consolas, monospace;
+      letter-spacing: 0.04em;
+    }
+  </style>
+
+  <rect width="1280" height="420" rx="28" fill="var(--paper)"/>
+  <path d="M0 338H1280" stroke="var(--rule)" stroke-width="1"/>
+  <path d="M760 0V420" stroke="var(--rule)" stroke-width="1" opacity="0.45"/>
+
+  <text x="64" y="62" class="mono" font-size="15" fill="var(--azure)">ORACLE TO FABRIC / PRIVATE DEMO</text>
+  <text x="64" y="150" class="display" font-size="66" fill="var(--ink)">Private Oracle.</text>
+  <text x="64" y="220" class="display" font-size="66" fill="var(--ink)">Live in Fabric.</text>
+  <text x="66" y="270" class="body" font-size="21" fill="var(--muted)">One command inserts a row in Oracle and waits for it in the Lakehouse.</text>
+
+  <g transform="translate(814 54)">
+    <rect width="392" height="70" rx="12" fill="var(--paper-raised)" stroke="var(--rule)"/>
+    <rect width="7" height="70" rx="3.5" fill="var(--oracle)"/>
+    <text x="28" y="31" class="body" font-size="18" font-weight="700" fill="var(--ink)">Oracle Linux VM</text>
+    <text x="28" y="53" class="mono" font-size="12" fill="var(--muted)">DEMO_DW / private IP only</text>
+
+    <path d="M196 70V94" stroke="var(--rule)" stroke-width="2"/>
+    <circle cx="196" cy="82" r="3" fill="var(--azure)"/>
+
+    <rect y="94" width="392" height="70" rx="12" fill="var(--paper-raised)" stroke="var(--rule)"/>
+    <rect y="94" width="7" height="70" rx="3.5" fill="var(--azure)"/>
+    <text x="28" y="125" class="body" font-size="18" font-weight="700" fill="var(--ink)">Gateway VM</text>
+    <text x="28" y="147" class="mono" font-size="12" fill="var(--muted)">Oracle Net 1521 / outbound 443</text>
+
+    <path d="M196 164V188" stroke="var(--rule)" stroke-width="2"/>
+    <circle cx="196" cy="176" r="3" fill="var(--fabric)"/>
+
+    <rect y="188" width="188" height="70" rx="12" fill="var(--paper-raised)" stroke="var(--rule)"/>
+    <rect y="188" width="7" height="70" rx="3.5" fill="var(--fabric)"/>
+    <text x="28" y="219" class="body" font-size="17" font-weight="700" fill="var(--ink)">Mirror</text>
+    <text x="28" y="241" class="mono" font-size="12" fill="var(--muted)">Live CDC</text>
+
+    <path d="M188 223H204" stroke="var(--rule)" stroke-width="2"/>
+    <circle cx="196" cy="223" r="3" fill="var(--fabric)"/>
+
+    <rect x="204" y="188" width="188" height="70" rx="12" fill="var(--paper-raised)" stroke="var(--rule)"/>
+    <text x="228" y="219" class="body" font-size="17" font-weight="700" fill="var(--ink)">Lakehouse</text>
+    <text x="228" y="241" class="mono" font-size="12" fill="var(--muted)">DEMO_DW</text>
+  </g>
+
+  <g class="mono" font-size="13" fill="var(--muted)">
+    <circle cx="66" cy="379" r="4" fill="var(--oracle)"/>
+    <text x="80" y="384">0 VM public IPs</text>
+    <circle cx="254" cy="379" r="4" fill="var(--azure)"/>
+    <text x="268" y="384">Bastion SSH</text>
+    <circle cx="414" cy="379" r="4" fill="var(--fabric)"/>
+    <text x="428" y="384">Snapshot and CDC tested</text>
+  </g>
+</svg>

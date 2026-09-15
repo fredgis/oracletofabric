@@ -11,7 +11,7 @@ These files describe the deployed Oracle to Fabric Demo environment, validated o
 | `03-security-flows` | Allowed private flows, required outbound flows, and blocked Internet ingress |
 | `04-data-flows` | Oracle snapshot and CDC path, Mirrored Database, SQL endpoint, and Lakehouse shortcut |
 
-The SVG files are the primary documentation output. PNG files are included for presentations and PDF files for review packs.
+The SVG files are self-contained and embed their icons, so they render on GitHub without local filesystem references. PNG files are included for presentations and PDF files for review packs.
 
 ## Source inventory
 

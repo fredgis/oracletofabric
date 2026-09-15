@@ -1,6 +1,9 @@
 """Render every architecture view with a locally installed Graphviz binary."""
 
+import base64
+import mimetypes
 import os
+import re
 import runpy
 import sys
 from pathlib import Path
@@ -8,11 +11,15 @@ from pathlib import Path
 
 ARCHITECTURE_DIR = Path(__file__).resolve().parent
 DIAGRAMS_DIR = ARCHITECTURE_DIR / "diagrams"
+RENDERED_DIR = ARCHITECTURE_DIR / "rendered"
 DEFAULT_SOURCES = (
     "01_context.py",
     "02_network_topology.py",
     "03_security_flows.py",
     "04_data_flows.py",
+)
+SVG_IMAGE_PATTERN = re.compile(
+    r'(?P<prefix><image\b[^>]*\bxlink:href=")(?P<href>[^"]+)(?P<suffix>")'
 )
 
 
@@ -36,11 +43,33 @@ def render(source: Path) -> None:
     runpy.run_path(str(source), run_name="__main__")
 
 
+def inline_svg_images(svg_path: Path) -> None:
+    content = svg_path.read_text(encoding="utf-8")
+
+    def replace_image(match: re.Match[str]) -> str:
+        image_path = Path(match.group("href"))
+        if not image_path.is_file():
+            raise FileNotFoundError(
+                f"SVG image reference cannot be embedded: {image_path}"
+            )
+        mime_type = mimetypes.guess_type(image_path.name)[0] or "image/png"
+        encoded = base64.b64encode(image_path.read_bytes()).decode("ascii")
+        return (
+            f'{match.group("prefix")}data:{mime_type};base64,{encoded}'
+            f'{match.group("suffix")}'
+        )
+
+    embedded = SVG_IMAGE_PATTERN.sub(replace_image, content)
+    svg_path.write_text(embedded, encoding="utf-8", newline="\n")
+
+
 def main() -> int:
     ensure_graphviz_on_path()
     source_names = tuple(sys.argv[1:]) or DEFAULT_SOURCES
     for source_name in source_names:
         render(DIAGRAMS_DIR / source_name)
+    for svg_path in sorted(RENDERED_DIR.glob("*.svg")):
+        inline_svg_images(svg_path)
     return 0
 
 
