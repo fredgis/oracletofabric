@@ -71,6 +71,31 @@ FABRIC_TABLE=DEMO_DW.FACT_SALES
 
 Use this for the demo. It needs no SSH session or portal work. Fabric can take several minutes to expose the new row, so the script waits for it.
 
+### SQL rendering smoke test
+
+This one is technically a test. It checks SQL*Plus, analytic functions, hierarchical row generation, `LISTAGG`, and `DBMS_RANDOM`. It also draws a sales chart and a random galaxy.
+
+```powershell
+.\tests\Invoke-DemoSqlFunTest.ps1
+```
+
+<p align="center">
+  <img src="docs/assets/oracle-sql-fun.png" alt="Oracle SQL sales chart and random galaxy output" width="704">
+</p>
+
+<details>
+<summary>Run the two SQL statements directly</summary>
+
+```sql
+select lpad(store_key, 2, '0') || ' | ' || rpad('#', round(sum(sales_amount) / max(sum(sales_amount)) over () * 40), '#') as SALES_BY_STORE from DEMO_DW.FACT_SALES group by store_key order by store_key;
+```
+
+```sql
+select listagg(case when star < 0.02 then '@' when star < 0.06 then '*' when star < 0.15 then '.' else ' ' end, '') within group (order by col_no) as GALAXY from (select ceil(level / 70) as row_no, mod(level - 1, 70) + 1 as col_no, dbms_random.value as star from dual connect by level <= 1400) group by row_no order by row_no;
+```
+
+</details>
+
 ## Connect to Oracle
 
 For routine tests, do not open either VM. Run the insert scenario above.
@@ -274,7 +299,7 @@ infra/        Azure Bicep
 scripts/      deployment, identity, and connection helpers
 oracle/       Oracle installation, validation, and CDC scripts
 fabric/       gateway and Fabric configuration
-tests/        simple insert and full end-to-end validation
+tests/        simple insert, SQL smoke test, and full end-to-end validation
 docs/         architecture sources and rendered diagrams
 ```
 
