@@ -79,16 +79,28 @@ This one is technically a test. It checks SQL*Plus, analytic functions, hierarch
 .\tests\Invoke-DemoSqlFunTest.ps1
 ```
 
-<details>
-<summary>Show sample output</summary>
+#### From Oracle SQL to Fabric Python
 
-<p align="center">
-  <a href="docs/assets/oracle-sql-fun.png">
-    <img src="docs/assets/oracle-sql-fun.png" alt="Oracle SQL sales chart and random galaxy output" width="420">
-  </a>
-</p>
+The same mirrored sales data, first rendered inside Oracle, then in a Fabric PySpark notebook.
 
-</details>
+<table>
+  <tr>
+    <th align="center">Oracle SQL*Plus</th>
+    <th align="center">Fabric Notebook</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="docs/assets/oracle-sql-fun.png">
+        <img src="docs/assets/oracle-sql-fun.png" alt="Oracle SQL sales chart and random galaxy output" width="360">
+      </a>
+    </td>
+    <td align="center">
+      <a href="docs/assets/fabric-notebook-fun.png">
+        <img src="docs/assets/fabric-notebook-fun.png" alt="Fabric notebook rendering the mirrored sales chart and Python galaxy" width="360">
+      </a>
+    </td>
+  </tr>
+</table>
 
 <details>
 <summary>Run the two SQL statements directly</summary>
