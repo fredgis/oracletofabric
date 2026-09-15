@@ -83,7 +83,9 @@ This one is technically a test. It checks SQL*Plus, analytic functions, hierarch
 <summary>Show sample output</summary>
 
 <p align="center">
-  <img src="docs/assets/oracle-sql-fun.png" alt="Oracle SQL sales chart and random galaxy output" width="420">
+  <a href="docs/assets/oracle-sql-fun.png">
+    <img src="docs/assets/oracle-sql-fun.png" alt="Oracle SQL sales chart and random galaxy output" width="420">
+  </a>
 </p>
 
 </details>
