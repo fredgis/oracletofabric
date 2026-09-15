@@ -54,8 +54,79 @@ When you want a real SQL*Plus session, connect **directly to `demo-oracle-vm` th
 | Open an interactive Oracle shell | Bastion SSH to `demo-oracle-vm` |
 | Inspect the Fabric gateway service | Bastion RDP to `demo-fabric-gateway-vm` |
 
+### Your first Oracle session
+
+When Bastion shows the Linux prompt:
+
+```text
+[demoadmin@demooracle ~]$
+```
+
+Run one command:
+
+```bash
+sudo demo-sqlplus
+```
+
+`ls` lists Linux files. It cannot show Oracle schemas or tables.
+
+The helper opens Oracle as the local administrator and switches to `FREEPDB1`, where the demo data lives. Oracle calls the objects owned by one database user a schema. This demo uses the `DEMO_DW` schema.
+
+You are inside Oracle when the prompt changes to:
+
+```text
+SQL>
+```
+
+Start with these commands:
+
+```sql
+-- Confirm the current pluggable database.
+show con_name
+
+-- List non-system schemas.
+select username
+from dba_users
+where oracle_maintained = 'N'
+order by username;
+
+-- List the five demo tables.
+select table_name
+from all_tables
+where owner = 'DEMO_DW'
+order by table_name;
+
+-- Show the columns and data types.
+desc DEMO_DW.FACT_SALES
+
+-- Count the sales rows.
+select count(*) from DEMO_DW.FACT_SALES;
+
+-- Read ten recent rows.
+select
+  SALES_KEY,
+  DATE_KEY,
+  CUSTOMER_KEY,
+  PRODUCT_KEY,
+  QUANTITY,
+  SALES_AMOUNT
+from DEMO_DW.FACT_SALES
+order by SALES_KEY desc
+fetch first 10 rows only;
+```
+
+The table query returns `DIM_CUSTOMER`, `DIM_DATE`, `DIM_PRODUCT`, `DIM_STORE`, and `FACT_SALES`.
+
+SQL statements such as `select`, `insert`, and `commit` end with `;`. SQL*Plus commands such as `show`, `desc`, and `exit` do not need one.
+
+Leave Oracle with:
+
+```sql
+exit
+```
+
 <details>
-<summary>Open an interactive SQL session with Bastion</summary>
+<summary>Bastion login and SSH key</summary>
 
 Export the DPAPI-protected deployment key:
 
@@ -74,18 +145,17 @@ Private key:    use the path printed by the script
 After Bastion opens the Linux shell:
 
 ```bash
-sudo -u oracle env \
-  ORACLE_HOME=/opt/oracle/product/26ai/dbhomeFree \
-  ORACLE_SID=FREE \
-  PATH=/opt/oracle/product/26ai/dbhomeFree/bin:/usr/bin \
-  /opt/oracle/product/26ai/dbhomeFree/bin/sqlplus "/ as sysdba"
+sudo demo-sqlplus
 ```
 
-Paste this SQL:
+</details>
+
+<details>
+<summary>Insert one row manually and send it to Fabric</summary>
+
+From the `SQL>` prompt:
 
 ```sql
-alter session set container=FREEPDB1;
-
 insert into DEMO_DW.FACT_SALES (
   SALES_KEY, DATE_KEY, CUSTOMER_KEY, PRODUCT_KEY, STORE_KEY,
   QUANTITY, UNIT_PRICE, SALES_AMOUNT, UPDATED_AT
@@ -99,15 +169,23 @@ commit;
 
 alter session set container=CDB$ROOT;
 alter system archive log current;
+alter session set container=FREEPDB1;
+
+select SALES_KEY, SALES_AMOUNT, UPDATED_AT
+from DEMO_DW.FACT_SALES
+order by SALES_KEY desc
+fetch first 1 row only;
 ```
 
-Delete the exported key after the Bastion session starts:
+Fabric Mirroring picks up the archived redo log. You can query the same row in `DemoLakehouse` under `DEMO_DW.FACT_SALES`.
+
+</details>
+
+Delete the exported SSH key after the Bastion session starts:
 
 ```powershell
 Remove-Item "$env:TEMP\demo-oracle-ssh.key"
 ```
-
-</details>
 
 ## Architecture
 

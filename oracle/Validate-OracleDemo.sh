@@ -6,6 +6,25 @@ ORACLE_SID="FREE"
 export ORACLE_HOME ORACLE_SID
 export PATH="$ORACLE_HOME/bin:$PATH"
 
+if [[ ! -x /usr/local/bin/demo-sqlplus ]]; then
+    echo 'The demo-sqlplus helper is not installed.' >&2
+    exit 1
+fi
+
+DEMO_SQLPLUS_OUTPUT="$(sudo demo-sqlplus <<'SQL'
+set heading off feedback off pagesize 0 verify off
+select 'DEMO_TABLES=' || count(*)
+from all_tables
+where owner = 'DEMO_DW';
+exit success
+SQL
+)"
+if ! grep -q 'Connected to FREEPDB1' <<<"$DEMO_SQLPLUS_OUTPUT" ||
+   ! grep -q 'DEMO_TABLES=5' <<<"$DEMO_SQLPLUS_OUTPUT"; then
+    echo 'The demo-sqlplus helper did not open FREEPDB1 with the five demo tables.' >&2
+    exit 1
+fi
+
 if ! pgrep -f '([do]b|[or]a)_pmon_FREE' >/dev/null 2>&1; then
     echo 'Oracle instance FREE is not running.' >&2
     exit 1
@@ -39,3 +58,5 @@ select 'MIRROR_USER=' || count(*) from dba_users where username = 'C##FABRIC_MIR
 
 exit success
 SQL
+
+echo 'DEMO_SQLPLUS=ready'

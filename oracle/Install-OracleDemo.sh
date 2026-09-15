@@ -108,6 +108,41 @@ fi
 export ORACLE_HOME ORACLE_SID
 export PATH="$ORACLE_HOME/bin:$PATH"
 
+install -d -m 0755 /usr/local/share/oracle-to-fabric-demo
+cat > /usr/local/share/oracle-to-fabric-demo/login.sql <<'SQL'
+whenever sqlerror continue
+alter session set container=FREEPDB1;
+set linesize 200
+set pagesize 100
+prompt
+prompt Connected to FREEPDB1. Demo schema: DEMO_DW
+show con_name
+SQL
+
+cat > /usr/local/bin/demo-sqlplus <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "$EUID" -ne 0 ]]; then
+    echo "Run: sudo demo-sqlplus" >&2
+    exit 1
+fi
+
+ORACLE_HOME="/opt/oracle/product/26ai/dbhomeFree"
+ORACLE_SID="FREE"
+export ORACLE_HOME ORACLE_SID
+export PATH="$ORACLE_HOME/bin:$PATH"
+
+exec runuser -u oracle -- env \
+    ORACLE_HOME="$ORACLE_HOME" \
+    ORACLE_SID="$ORACLE_SID" \
+    PATH="$PATH" \
+    "$ORACLE_HOME/bin/sqlplus" "/ as sysdba" \
+    @/usr/local/share/oracle-to-fabric-demo/login.sql
+SH
+chmod 0755 /usr/local/bin/demo-sqlplus
+ln -sfn /usr/local/bin/demo-sqlplus /usr/bin/demo-sqlplus
+
 if [[ -f "$CONFIGURED_MARKER" ]]; then
     firewall-cmd --permanent --add-port=1521/tcp >/dev/null
     firewall-cmd --reload >/dev/null
