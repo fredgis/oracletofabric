@@ -188,7 +188,7 @@ No tenant ID, subscription ID, account, token, password, certificate, recovery k
 <summary>Security and network details</summary>
 
 - SSH, RDP, and Oracle Net have no inbound Internet path.
-- Bastion Developer provides browser-based administration.
+- Bastion Developer provides browser-based administration and still requires Azure authorization plus the VM credential.
 - Oracle Net is allowed only from the gateway subnet.
 - Key Vault public network access is disabled.
 - The NAT public IP accepts no unsolicited inbound connection.

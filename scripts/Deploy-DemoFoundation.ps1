@@ -306,11 +306,6 @@ try {
         throw 'Unable to remove the temporary secret seed extension.'
     }
 
-    $bootstrapIp = (Invoke-RestMethod -Uri 'https://api.ipify.org').Trim()
-    if ($bootstrapIp -notmatch '^\d{1,3}(\.\d{1,3}){3}$') {
-        throw 'Unable to determine the administrator source IPv4 address.'
-    }
-
     $bastionExists = az network bastion show `
         --subscription $SubscriptionId `
         --resource-group $ResourceGroupName `
@@ -325,10 +320,21 @@ try {
             --location $Location `
             --sku Developer `
             --vnet-name $outputs.vnetName.value `
-            --network-acls-ips "$bootstrapIp/32" `
             --output none
         if ($LASTEXITCODE -ne 0) {
             throw 'Bastion Developer deployment failed.'
+        }
+    }
+    else {
+        az network bastion update `
+            --subscription $SubscriptionId `
+            --resource-group $ResourceGroupName `
+            --name "$Prefix-bastion" `
+            --location $Location `
+            --network-acls '{ip-rules:[]}' `
+            --output none
+        if ($LASTEXITCODE -ne 0) {
+            throw 'Unable to reconcile Bastion Developer network ACLs.'
         }
     }
 

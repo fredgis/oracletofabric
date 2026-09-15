@@ -34,6 +34,10 @@ if ($bastion.sku.name -ne 'Developer') {
 if (@($bastion.ipConfigurations).Count -ne 0) {
     $failures.Add('Bastion Developer unexpectedly has a dedicated IP configuration.')
 }
+$bastionIpRuleCount = @($bastion.networkAcls.ipRules).Count
+if ($bastionIpRuleCount -ne 0) {
+    $failures.Add("Bastion Developer has $bastionIpRuleCount client IP ACL rule(s), expected none.")
+}
 
 $natPublicIps = az network public-ip list `
     --subscription $SubscriptionId `
@@ -81,5 +85,6 @@ Write-Output 'AZURE_DEMO_VALID=true'
 Write-Output "VM_COUNT=$(@($vms).Count)"
 Write-Output 'WORKLOAD_PUBLIC_IP_COUNT=0'
 Write-Output 'BASTION_SKU=Developer'
+Write-Output "BASTION_CLIENT_IP_RULE_COUNT=$bastionIpRuleCount"
 Write-Output 'NAT_PUBLIC_IP_COUNT=1'
 Write-Output 'KEY_VAULT_PUBLIC_ACCESS=Disabled'
