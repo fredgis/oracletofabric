@@ -267,6 +267,16 @@ if (-not $connection) {
         -Headers $headers `
         -Body $connectionBody
 }
+if (-not $state.deploymentUserId) {
+    throw 'The deploying user object ID is missing from the local deployment state.'
+}
+Ensure-DemoFabricRoleAssignment `
+    -ResourceUri "$fabricBaseUri/connections/$($connection.id)" `
+    -Headers $headers `
+    -PrincipalId $state.deploymentUserId `
+    -PrincipalType User `
+    -Role Owner `
+    -ResourceDescription $ConnectionName | Out-Null
 
 $items = (Invoke-FabricRequest -Method Get -Uri "$fabricBaseUri/workspaces/$($workspace.id)/items" -Headers $headers).value
 $lakehouse = $items |
@@ -434,3 +444,4 @@ Write-Output "FABRIC_LAKEHOUSE=$($lakehouse.displayName)"
 Write-Output "FABRIC_MIRROR=$($mirror.displayName)"
 Write-Output "MIRRORING_STATUS=$status"
 Write-Output "SHORTCUT_COUNT=$($tableNames.Count)"
+Write-Output 'DEPLOYMENT_USER_CONNECTION_ROLE=Owner'

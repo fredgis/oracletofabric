@@ -12,6 +12,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'Demo.Common.ps1')
 $azureCliClientId = '04b07795-8ddb-461a-bbee-02f9e1bf7b46'
 $nativeClientRedirectUri = 'https://login.microsoftonline.com/common/oauth2/nativeclient'
 
@@ -151,6 +152,12 @@ if ($graphResponse.StatusCode -ne 200) {
     $graphToken = Get-GraphTokenWithPkce -Tenant $TenantId -LoginHint $loginHint
 }
 $graphHeaders = @{ Authorization = "Bearer $graphToken" }
+$currentDeploymentUser = Invoke-RestMethod `
+    -Headers $graphHeaders `
+    -Uri 'https://graph.microsoft.com/v1.0/me?$select=id'
+$deploymentUserId = Resolve-DemoDeploymentUserId `
+    -RecordedUserId $state.deploymentUserId `
+    -CurrentUserId $currentDeploymentUser.id
 
 $fabricToken = (az account get-access-token `
     --subscription $SubscriptionId `
@@ -370,6 +377,10 @@ $state | Add-Member -NotePropertyName gatewayIdentity -NotePropertyValue ([pscus
     secretExpires = $secretExpiry
     secretKeyId = $secretKeyId
 }) -Force
+$state | Add-Member `
+    -NotePropertyName deploymentUserId `
+    -NotePropertyValue $deploymentUserId `
+    -Force
 $state | Add-Member -NotePropertyName fabric -NotePropertyValue ([pscustomobject]@{
     workspaceId = $workspace.id
     gatewayId = $state.fabric.gatewayId

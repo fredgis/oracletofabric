@@ -109,14 +109,27 @@ $graphClaims = Get-DemoJwtClaims -AccessToken $graphToken
 if ($graphClaims.idtyp -and $graphClaims.idtyp -ne 'user') {
     throw "Deployment requires an interactive user identity for Microsoft Graph.`n$reauthentication"
 }
+$currentDeploymentUser = Invoke-RestMethod `
+    -Headers @{ Authorization = "Bearer $graphToken" } `
+    -Uri 'https://graph.microsoft.com/v1.0/me?$select=id'
+$state = if (Test-Path -LiteralPath $StatePath) {
+    Get-Content -Raw $StatePath | ConvertFrom-Json
+}
+else {
+    $null
+}
+if ($state.deploymentUserId) {
+    Resolve-DemoDeploymentUserId `
+        -RecordedUserId $state.deploymentUserId `
+        -CurrentUserId $currentDeploymentUser.id | Out-Null
+}
 
 $requiredPowerBiRoleIds = @(
     '654b31ae-d941-4e22-8798-7add8fdf049f',
     '28379fa9-8596-4fd9-869e-cb60a93b5d84'
 )
 $directoryWriteRequired = $true
-if (Test-Path -LiteralPath $StatePath) {
-    $state = Get-Content -Raw $StatePath | ConvertFrom-Json
+if ($state) {
     $identity = $state.gatewayIdentity
     if (
         $identity.servicePrincipalId -and

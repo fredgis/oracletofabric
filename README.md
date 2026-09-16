@@ -306,7 +306,10 @@ No tenant ID, subscription ID, account, token, password, certificate, recovery k
 - Oracle Net is allowed only from the gateway subnet.
 - Key Vault public network access is disabled.
 - The NAT public IP accepts no unsolicited inbound connection.
-- The gateway uses a dedicated service principal.
+- The gateway and connection automation uses a dedicated service principal.
+- The recorded deploying user receives `Admin` on `Demo Oracle Gateway` and `Owner` on `Demo Oracle Connection` for portal access.
+- The local state stores only that user's Entra object ID. It does not store the user's name, UPN, token, or credentials.
+- A rerun under a different user stops instead of replacing the recorded identity silently.
 - Credentials are generated during deployment and stored in Key Vault plus local DPAPI-protected state.
 
 </details>

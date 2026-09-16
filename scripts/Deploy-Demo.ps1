@@ -198,6 +198,16 @@ if (-not ($gatewayRoles | Where-Object {
 })) {
     throw 'The Fabric automation service principal is not an Admin of Demo Oracle Gateway.'
 }
+if (-not $state.deploymentUserId) {
+    throw 'The deploying user object ID is missing from the local deployment state.'
+}
+Ensure-DemoFabricRoleAssignment `
+    -ResourceUri "https://api.fabric.microsoft.com/v1/gateways/$($gateway.id)" `
+    -Headers $fabricHeaders `
+    -PrincipalId $state.deploymentUserId `
+    -PrincipalType User `
+    -Role Admin `
+    -ResourceDescription 'Demo Oracle Gateway' | Out-Null
 
 & (Join-Path $repoRoot 'fabric\Configure-DemoFabric.ps1') -SubscriptionId $SubscriptionId
 & (Join-Path $repoRoot 'tests\Validate-AzureDemo.ps1') -SubscriptionId $SubscriptionId
@@ -234,4 +244,5 @@ if ($RunCdcValidation) {
     & (Join-Path $repoRoot 'tests\Invoke-DemoCdcValidation.ps1')
 }
 
+Write-Output 'DEPLOYMENT_USER_GATEWAY_ROLE=Admin'
 Write-Output 'DEMO_DEPLOYMENT_VALID=true'

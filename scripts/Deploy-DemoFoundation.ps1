@@ -225,6 +225,9 @@ try {
     if ($storedState.fabric) {
         $bootstrapState.fabric = $storedState.fabric
     }
+    if ($storedState.deploymentUserId) {
+        $bootstrapState.deploymentUserId = $storedState.deploymentUserId
+    }
     $bootstrapState | ConvertTo-Json -Depth 8 | Set-Content -Path $stateFile -Encoding utf8NoBOM
 
     $parameters = @{
@@ -383,6 +386,9 @@ try {
     }
     if ($bootstrapState.fabric) {
         $state.fabric = $bootstrapState.fabric
+    }
+    if ($bootstrapState.deploymentUserId) {
+        $state.deploymentUserId = $bootstrapState.deploymentUserId
     }
     $state | ConvertTo-Json -Depth 8 | Set-Content -Path $stateFile -Encoding utf8NoBOM
 

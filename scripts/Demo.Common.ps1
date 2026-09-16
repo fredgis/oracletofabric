@@ -110,6 +110,115 @@ function Get-DemoClientCredentialToken {
     return $response.access_token
 }
 
+function Resolve-DemoDeploymentUserId {
+    param(
+        [string]$RecordedUserId,
+
+        [Parameter(Mandatory)]
+        [string]$CurrentUserId
+    )
+
+    if (-not $RecordedUserId) {
+        return $CurrentUserId
+    }
+    if ($RecordedUserId -ne $CurrentUserId) {
+        throw "The local deployment state belongs to Entra user $RecordedUserId, but the current user is $CurrentUserId."
+    }
+    return $RecordedUserId
+}
+
+function Get-DemoRoleAssignmentPlan {
+    param(
+        [object[]]$Assignments,
+
+        [Parameter(Mandatory)]
+        [string]$PrincipalId,
+
+        [Parameter(Mandatory)]
+        [string]$Role
+    )
+
+    $matches = @($Assignments | Where-Object { $_.principal.id -eq $PrincipalId })
+    if ($matches.Count -gt 1) {
+        throw "Found multiple role assignments for principal $PrincipalId."
+    }
+    if ($matches.Count -eq 0) {
+        return [pscustomobject]@{ Action = 'Create'; AssignmentId = $null }
+    }
+    if ($matches[0].role -eq $Role) {
+        return [pscustomobject]@{ Action = 'None'; AssignmentId = $matches[0].id }
+    }
+    return [pscustomobject]@{ Action = 'Update'; AssignmentId = $matches[0].id }
+}
+
+function Ensure-DemoFabricRoleAssignment {
+    param(
+        [Parameter(Mandatory)]
+        [string]$ResourceUri,
+
+        [Parameter(Mandatory)]
+        [hashtable]$Headers,
+
+        [Parameter(Mandatory)]
+        [string]$PrincipalId,
+
+        [ValidateSet('User', 'Group', 'ServicePrincipal')]
+        [string]$PrincipalType = 'User',
+
+        [Parameter(Mandatory)]
+        [string]$Role,
+
+        [Parameter(Mandatory)]
+        [string]$ResourceDescription
+    )
+
+    $listResponse = Invoke-WebRequest `
+        -Headers $Headers `
+        -Uri "$ResourceUri/roleAssignments" `
+        -SkipHttpErrorCheck
+    if ($listResponse.StatusCode -ne 200) {
+        throw "Unable to list role assignments for $ResourceDescription. HTTP $($listResponse.StatusCode): $($listResponse.Content)"
+    }
+
+    $assignments = ($listResponse.Content | ConvertFrom-Json).value
+    $plan = Get-DemoRoleAssignmentPlan `
+        -Assignments $assignments `
+        -PrincipalId $PrincipalId `
+        -Role $Role
+    if ($plan.Action -eq 'None') {
+        return $plan
+    }
+
+    if ($plan.Action -eq 'Create') {
+        $uri = "$ResourceUri/roleAssignments"
+        $body = @{
+            principal = @{
+                id = $PrincipalId
+                type = $PrincipalType
+            }
+            role = $Role
+        }
+        $method = 'Post'
+    }
+    else {
+        $uri = "$ResourceUri/roleAssignments/$($plan.AssignmentId)"
+        $body = @{ role = $Role }
+        $method = 'Patch'
+    }
+
+    $writeResponse = Invoke-WebRequest `
+        -Method $method `
+        -Headers $Headers `
+        -Uri $uri `
+        -ContentType 'application/json' `
+        -Body ($body | ConvertTo-Json -Depth 5) `
+        -SkipHttpErrorCheck
+    if ($writeResponse.StatusCode -lt 200 -or $writeResponse.StatusCode -ge 300) {
+        throw "Unable to assign $Role on $ResourceDescription to user $PrincipalId. HTTP $($writeResponse.StatusCode): $($writeResponse.Content)"
+    }
+    return $plan
+}
+
 function Get-DemoSqlCmdInstallCommand {
     return 'winget install --id Microsoft.Sqlcmd --exact --accept-source-agreements --accept-package-agreements --silent'
 }
