@@ -33,6 +33,14 @@ get_secret() {
         | python3 -c 'import json,sys; print(json.load(sys.stdin)["value"])'
 }
 
+ensure_oracle_firewall() {
+    systemctl enable --now firewalld >/dev/null
+    firewall-cmd --add-port=1521/tcp >/dev/null
+    firewall-cmd --permanent --add-port=1521/tcp >/dev/null
+    firewall-cmd --query-port=1521/tcp >/dev/null
+    firewall-cmd --permanent --query-port=1521/tcp >/dev/null
+}
+
 find_data_device() {
     local device
     while read -r device; do
@@ -143,9 +151,9 @@ SH
 chmod 0755 /usr/local/bin/demo-sqlplus
 ln -sfn /usr/local/bin/demo-sqlplus /usr/bin/demo-sqlplus
 
+ensure_oracle_firewall
+
 if [[ -f "$CONFIGURED_MARKER" ]]; then
-    firewall-cmd --permanent --add-port=1521/tcp >/dev/null
-    firewall-cmd --reload >/dev/null
     chkconfig oracle-free-26ai on
     log "Oracle to Fabric Demo database is already configured"
     exit 0
@@ -348,8 +356,6 @@ union all select 'FACT_SALES', count(*) from DEMO_DW.FACT_SALES;
 exit success
 SQL
 
-firewall-cmd --permanent --add-port=1521/tcp
-firewall-cmd --reload
 chkconfig oracle-free-26ai on
 
 DATAFILE_COUNT="$(sudo -u oracle env ORACLE_HOME="$ORACLE_HOME" ORACLE_SID="$ORACLE_SID" PATH="$PATH" \

@@ -5,10 +5,17 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $repoRoot 'scripts\Demo.Common.ps1')
 
 if (-not (Test-Path -LiteralPath $StatePath)) {
     throw "Deployment state not found: $StatePath"
 }
+Assert-DemoCommand `
+    -Name az `
+    -Remediation 'winget install --id Microsoft.AzureCLI --exact --accept-source-agreements --accept-package-agreements'
+Assert-DemoCommand `
+    -Name sqlcmd `
+    -Remediation "$(Get-DemoSqlCmdInstallCommand)`nOpen a new PowerShell session, then run: sqlcmd --version"
 
 $state = Get-Content -Raw $StatePath | ConvertFrom-Json
 $fabricToken = (az account get-access-token `

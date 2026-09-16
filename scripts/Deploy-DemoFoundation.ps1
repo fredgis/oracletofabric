@@ -13,6 +13,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'Demo.Common.ps1')
 $templateFile = Join-Path $repoRoot 'infra\main.bicep'
 $gatewayPreparationScriptFile = Join-Path $repoRoot 'fabric\Prepare-DemoGateway.ps1'
 $stateDirectory = Join-Path $env:LOCALAPPDATA 'OracleToFabricDemo'
@@ -152,11 +153,19 @@ try {
         throw 'ssh-keygen is required to manage the Demo key.'
     }
 
-    $existingVmCount = @(az vm list `
-        --subscription $SubscriptionId `
-        --resource-group $ResourceGroupName `
-        --query "[?name=='$Prefix-oracle-vm' || name=='$Prefix-fabric-gateway-vm'].name" `
-        --output tsv).Count
+    $vmJson = (Invoke-DemoNativeCommand `
+        -Description 'Azure VM list' `
+        -Command {
+            az vm list `
+                --subscription $SubscriptionId `
+                --resource-group $ResourceGroupName `
+                --output json
+        }) -join "`n"
+    $existingVms = $vmJson | ConvertFrom-Json
+    $expectedVmNames = @("$Prefix-oracle-vm", "$Prefix-fabric-gateway-vm")
+    $existingVmCount = @(
+        $existingVms | Where-Object name -in $expectedVmNames
+    ).Count
 
     $storedState = $null
     if (Test-Path -LiteralPath $stateFile) {
@@ -306,17 +315,21 @@ try {
         throw 'Unable to remove the temporary secret seed extension.'
     }
 
-    $bastionExists = az network bastion show `
-        --subscription $SubscriptionId `
-        --resource-group $ResourceGroupName `
-        --name "$Prefix-bastion" `
-        --query name `
-        --output tsv 2>$null
-    if (-not $bastionExists) {
+    $bastionName = "$Prefix-bastion"
+    $bastionCount = Get-DemoExactNameCount `
+        -Name $bastionName `
+        -Description 'Azure Bastion list' `
+        -ListCommand {
+            az network bastion list `
+                --subscription $SubscriptionId `
+                --resource-group $ResourceGroupName `
+                --output json
+        }
+    if ($bastionCount -eq 0) {
         az network bastion create `
             --subscription $SubscriptionId `
             --resource-group $ResourceGroupName `
-            --name "$Prefix-bastion" `
+            --name $bastionName `
             --location $Location `
             --sku Developer `
             --vnet-name $outputs.vnetName.value `
@@ -325,17 +338,20 @@ try {
             throw 'Bastion Developer deployment failed.'
         }
     }
-    else {
+    elseif ($bastionCount -eq 1) {
         az network bastion update `
             --subscription $SubscriptionId `
             --resource-group $ResourceGroupName `
-            --name "$Prefix-bastion" `
+            --name $bastionName `
             --location $Location `
             --network-acls '{ip-rules:[]}' `
             --output none
         if ($LASTEXITCODE -ne 0) {
             throw 'Unable to reconcile Bastion Developer network ACLs.'
         }
+    }
+    else {
+        throw "Expected at most one Bastion named $bastionName, found $bastionCount."
     }
 
     $state = @{

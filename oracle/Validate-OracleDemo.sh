@@ -35,6 +35,12 @@ if ! lsnrctl status | grep -qi 'FREEPDB1'; then
     exit 1
 fi
 
+if ! firewall-cmd --query-port=1521/tcp >/dev/null ||
+   ! firewall-cmd --permanent --query-port=1521/tcp >/dev/null; then
+    echo 'Oracle firewalld does not allow 1521/tcp in both runtime and permanent configuration.' >&2
+    exit 1
+fi
+
 sudo -u oracle env ORACLE_HOME="$ORACLE_HOME" ORACLE_SID="$ORACLE_SID" PATH="$PATH" \
     "$ORACLE_HOME/bin/sqlplus" -s "/ as sysdba" <<'SQL'
 set echo off feedback off heading off pagesize 0 linesize 200 verify off
@@ -60,3 +66,4 @@ exit success
 SQL
 
 echo 'DEMO_SQLPLUS=ready'
+echo 'ORACLE_FIREWALL_1521=ready'

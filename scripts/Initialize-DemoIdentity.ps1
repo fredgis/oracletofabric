@@ -166,7 +166,11 @@ foreach ($title in @(
 )) {
     $setting = $tenantSettings | Where-Object title -eq $title | Select-Object -First 1
     if (-not $setting.enabled) {
-        throw "Required Fabric tenant setting is disabled: $title"
+        throw @"
+Required Fabric tenant setting is disabled: $title
+Enable it at https://app.fabric.microsoft.com/admin-portal/tenantSettings.
+Fabric Administrator or Power BI Administrator is required.
+"@
     }
 }
 
@@ -308,16 +312,30 @@ foreach ($roleId in @(
     '28379fa9-8596-4fd9-869e-cb60a93b5d84'
 )) {
     if (-not ($existingAssignments | Where-Object appRoleId -eq $roleId)) {
-        Invoke-RestMethod `
-            -Headers $graphHeaders `
-            -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($servicePrincipal.id)/appRoleAssignments" `
-            -Method Post `
-            -ContentType 'application/json' `
-            -Body (@{
-                principalId = $servicePrincipal.id
-                resourceId = $powerBiServicePrincipal.id
-                appRoleId = $roleId
-            } | ConvertTo-Json) | Out-Null
+        try {
+            Invoke-RestMethod `
+                -Headers $graphHeaders `
+                -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($servicePrincipal.id)/appRoleAssignments" `
+                -Method Post `
+                -ContentType 'application/json' `
+                -Body (@{
+                    principalId = $servicePrincipal.id
+                    resourceId = $powerBiServicePrincipal.id
+                    appRoleId = $roleId
+                } | ConvertTo-Json) | Out-Null
+        }
+        catch {
+            if ([int]$_.Exception.Response.StatusCode -eq 403) {
+                throw @"
+Microsoft Graph denied the app-role assignment.
+Activate Cloud Application Administrator or Application Administrator in PIM, then refresh Azure CLI:
+az logout
+az login --tenant `$env:AZURE_TENANT_ID --use-device-code
+az account set --subscription `$env:AZURE_SUBSCRIPTION_ID
+"@
+            }
+            throw
+        }
     }
 }
 

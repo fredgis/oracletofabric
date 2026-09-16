@@ -14,6 +14,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $fabricBaseUri = 'https://api.fabric.microsoft.com/v1'
+$repoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $repoRoot 'scripts\Demo.Common.ps1')
 
 function Unprotect-LocalValue {
     param([string]$Value)
@@ -147,12 +149,41 @@ function Invoke-FabricRequest {
 
     $response = Invoke-WebRequest @arguments
     if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 300) {
+        if ($response.StatusCode -in 401, 403) {
+            throw "Fabric automation identity is not authorized for $Method $Uri. Verify tenant settings, API roles, workspace Contributor, and gateway Admin access."
+        }
         throw "Fabric request failed: $Method $Uri returned $($response.StatusCode): $($response.Content)"
     }
     if ([string]::IsNullOrWhiteSpace($response.Content)) {
         return $null
     }
     return $response.Content | ConvertFrom-Json
+}
+
+function Find-FabricNamedValue {
+    param(
+        [string]$Uri,
+        [hashtable]$Headers,
+        [string]$DisplayName,
+        [int]$Attempts = 18,
+        [int]$DelaySeconds = 10
+    )
+
+    for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+        $item = (Invoke-FabricRequest `
+            -Method Get `
+            -Uri $Uri `
+            -Headers $Headers).value |
+            Where-Object displayName -eq $DisplayName |
+            Select-Object -First 1
+        if ($item) {
+            return $item
+        }
+        if ($attempt -lt $Attempts) {
+            Start-Sleep -Seconds $DelaySeconds
+        }
+    }
+    return $null
 }
 
 if (-not (Test-Path -LiteralPath $StatePath)) {
@@ -162,24 +193,29 @@ if (-not (Test-Path -LiteralPath $StatePath)) {
 $state = Get-Content -Raw $StatePath | ConvertFrom-Json
 $mirrorPassword = Unprotect-LocalValue -Value $state.protected.mirrorPassword
 
-$fabricToken = (az account get-access-token `
-    --subscription $SubscriptionId `
-    --resource 'https://api.fabric.microsoft.com' `
-    --output json | ConvertFrom-Json).accessToken
+$gatewayClientSecret = Unprotect-LocalValue `
+    -Value $state.gatewayIdentity.protectedClientSecret
+$fabricToken = Get-DemoClientCredentialToken `
+    -TenantId $state.tenantId `
+    -ClientId $state.gatewayIdentity.appId `
+    -ClientSecret $gatewayClientSecret `
+    -Resource 'https://api.fabric.microsoft.com'
 $headers = @{ Authorization = "Bearer $fabricToken" }
 
-$workspace = (Invoke-FabricRequest -Method Get -Uri "$fabricBaseUri/workspaces" -Headers $headers).value |
-    Where-Object displayName -eq $WorkspaceName |
-    Select-Object -First 1
+$workspace = Find-FabricNamedValue `
+    -Uri "$fabricBaseUri/workspaces" `
+    -Headers $headers `
+    -DisplayName $WorkspaceName
 if (-not $workspace) {
-    throw "Fabric workspace not found: $WorkspaceName"
+    throw "Fabric workspace $WorkspaceName was not visible to the automation service principal within three minutes."
 }
 
-$gateway = (Invoke-FabricRequest -Method Get -Uri "$fabricBaseUri/gateways" -Headers $headers).value |
-    Where-Object displayName -eq $GatewayName |
-    Select-Object -First 1
+$gateway = Find-FabricNamedValue `
+    -Uri "$fabricBaseUri/gateways" `
+    -Headers $headers `
+    -DisplayName $GatewayName
 if (-not $gateway) {
-    throw "Fabric gateway not found: $GatewayName"
+    throw "Fabric gateway $GatewayName was not visible to the automation service principal within three minutes."
 }
 $gateway = Invoke-FabricRequest -Method Get -Uri "$fabricBaseUri/gateways/$($gateway.id)" -Headers $headers
 

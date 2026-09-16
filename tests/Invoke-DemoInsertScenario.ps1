@@ -6,16 +6,17 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $repoRoot 'scripts\Demo.Common.ps1')
 
 if (-not (Test-Path -LiteralPath $StatePath)) {
     throw "Deployment state not found: $StatePath"
 }
-if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
-    throw 'Azure CLI is required.'
-}
-if (-not (Get-Command sqlcmd -ErrorAction SilentlyContinue)) {
-    throw 'sqlcmd is required to query the Fabric SQL endpoint.'
-}
+Assert-DemoCommand `
+    -Name az `
+    -Remediation 'winget install --id Microsoft.AzureCLI --exact --accept-source-agreements --accept-package-agreements'
+Assert-DemoCommand `
+    -Name sqlcmd `
+    -Remediation "$(Get-DemoSqlCmdInstallCommand)`nOpen a new PowerShell session, then run: sqlcmd --version"
 
 $state = Get-Content -Raw $StatePath | ConvertFrom-Json
 $salesKey = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()

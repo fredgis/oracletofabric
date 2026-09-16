@@ -13,6 +13,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $statePath = "$env:LOCALAPPDATA\OracleToFabricDemo\state.json"
+. (Join-Path $PSScriptRoot 'Demo.Common.ps1')
 
 function Unprotect-LocalValue {
     param([string]$Value)
@@ -20,23 +21,62 @@ function Unprotect-LocalValue {
     return [System.Net.NetworkCredential]::new('', (ConvertTo-SecureString $Value)).Password
 }
 
-function Get-FabricContext {
+function Get-AutomationFabricHeaders {
     param([pscustomobject]$State)
 
-    $token = (az account get-access-token `
-        --subscription $State.subscriptionId `
-        --resource 'https://api.fabric.microsoft.com' `
-        --output json | ConvertFrom-Json).accessToken
-    $headers = @{ Authorization = "Bearer $token" }
-    $workspace = (Invoke-RestMethod -Headers $headers -Uri 'https://api.fabric.microsoft.com/v1/workspaces').value |
-        Where-Object displayName -eq 'FGI-ORACLE' |
-        Select-Object -First 1
-    return @{
-        Token = $token
-        Headers = $headers
-        Workspace = $workspace
+    if (
+        -not $State.gatewayIdentity.appId -or
+        -not $State.gatewayIdentity.protectedClientSecret
+    ) {
+        throw 'The Fabric automation identity is missing from the local encrypted state.'
     }
+
+    $clientSecret = Unprotect-LocalValue -Value $State.gatewayIdentity.protectedClientSecret
+    $token = Get-DemoClientCredentialToken `
+        -TenantId $State.tenantId `
+        -ClientId $State.gatewayIdentity.appId `
+        -ClientSecret $clientSecret `
+        -Resource 'https://api.fabric.microsoft.com'
+    return @{ Authorization = "Bearer $token" }
 }
+
+function Find-FabricGateway {
+    param(
+        [hashtable]$Headers,
+        [string]$GatewayName,
+        [int]$Attempts = 1,
+        [int]$DelaySeconds = 10
+    )
+
+    for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+        $response = Invoke-WebRequest `
+            -Headers $Headers `
+            -Uri 'https://api.fabric.microsoft.com/v1/gateways' `
+            -SkipHttpErrorCheck
+        if ($response.StatusCode -in 401, 403) {
+            throw 'The Fabric automation service principal cannot list gateways. Verify tenant settings, API roles, and gateway Admin access.'
+        }
+        if ($response.StatusCode -ne 200) {
+            throw "Fabric gateway lookup returned HTTP $($response.StatusCode): $($response.Content)"
+        }
+
+        $gateway = ($response.Content | ConvertFrom-Json).value |
+            Where-Object displayName -eq $GatewayName |
+            Select-Object -First 1
+        if ($gateway) {
+            return $gateway
+        }
+        if ($attempt -lt $Attempts) {
+            Start-Sleep -Seconds $DelaySeconds
+        }
+    }
+    return $null
+}
+
+& (Join-Path $PSScriptRoot 'Test-DemoPrerequisites.ps1') `
+    -SubscriptionId $SubscriptionId `
+    -TenantId $TenantId `
+    -WorkspaceName 'FGI-ORACLE'
 
 $identityExisted = $false
 if (Test-Path -LiteralPath $statePath) {
@@ -77,11 +117,24 @@ if ($LASTEXITCODE -ne 0) {
     throw 'Oracle installation failed.'
 }
 
-$fabric = Get-FabricContext -State $state
-$gateways = (Invoke-RestMethod -Headers $fabric.Headers -Uri 'https://api.fabric.microsoft.com/v1/gateways').value
-$gateway = $gateways |
-    Where-Object displayName -eq 'Demo Oracle Gateway' |
-    Select-Object -First 1
+$connectivity = az vm run-command invoke `
+    --subscription $SubscriptionId `
+    --resource-group $ResourceGroupName `
+    --name $state.gatewayVmName `
+    --command-id RunPowerShellScript `
+    --scripts "@$(Join-Path $repoRoot 'fabric\Test-DemoOracleConnectivity.ps1')" `
+    --parameters "OracleHost=$($state.oraclePrivateIp)" 'OraclePort=1521' `
+    --query 'value[0].message' `
+    --output tsv
+$connectivityText = $connectivity -join "`n"
+if ($LASTEXITCODE -ne 0 -or $connectivityText -notmatch 'ORACLE_TCP_VALID=true') {
+    throw "Gateway-to-Oracle TCP validation failed: $connectivityText"
+}
+
+$fabricHeaders = Get-AutomationFabricHeaders -State $state
+$gateway = Find-FabricGateway `
+    -Headers $fabricHeaders `
+    -GatewayName 'Demo Oracle Gateway'
 
 if (-not $gateway) {
     $clientSecret = Unprotect-LocalValue -Value $state.gatewayIdentity.protectedClientSecret
@@ -126,30 +179,24 @@ if (-not $gateway) {
         throw 'Gateway registration succeeded, but its temporary Run Command could not be removed.'
     }
 
-    $gateway = (Invoke-RestMethod -Headers $fabric.Headers -Uri 'https://api.fabric.microsoft.com/v1/gateways').value |
-        Where-Object displayName -eq 'Demo Oracle Gateway' |
-        Select-Object -First 1
+    $gateway = Find-FabricGateway `
+        -Headers $fabricHeaders `
+        -GatewayName 'Demo Oracle Gateway' `
+        -Attempts 18 `
+        -DelaySeconds 10
     if (-not $gateway) {
-        throw 'Gateway registration completed but the gateway is not visible in Fabric.'
+        throw 'Gateway registration completed, but the automation service principal could not discover it within three minutes.'
     }
 }
 
 $gatewayRoles = (Invoke-RestMethod `
-    -Headers $fabric.Headers `
+    -Headers $fabricHeaders `
     -Uri "https://api.fabric.microsoft.com/v1/gateways/$($gateway.id)/roleAssignments").value
-if (-not ($gatewayRoles | Where-Object { $_.principal.id -eq $state.gatewayIdentity.servicePrincipalId })) {
-    Invoke-RestMethod `
-        -Headers $fabric.Headers `
-        -Uri "https://api.fabric.microsoft.com/v1/gateways/$($gateway.id)/roleAssignments" `
-        -Method Post `
-        -ContentType 'application/json' `
-        -Body (@{
-            principal = @{
-                id = $state.gatewayIdentity.servicePrincipalId
-                type = 'ServicePrincipal'
-            }
-            role = 'Admin'
-        } | ConvertTo-Json -Depth 5) | Out-Null
+if (-not ($gatewayRoles | Where-Object {
+    $_.principal.id -eq $state.gatewayIdentity.servicePrincipalId -and
+    $_.role -eq 'Admin'
+})) {
+    throw 'The Fabric automation service principal is not an Admin of Demo Oracle Gateway.'
 }
 
 & (Join-Path $repoRoot 'fabric\Configure-DemoFabric.ps1') -SubscriptionId $SubscriptionId

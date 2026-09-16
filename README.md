@@ -240,10 +240,22 @@ Remove-Item "$env:TEMP\demo-oracle-ssh.key"
 Prerequisites:
 
 - Azure CLI authenticated on the target tenant
-- Azure Owner and Fabric Administrator permissions during deployment
+- Azure Owner on the subscription
+- Fabric Administrator or Power BI Administrator
+- Cloud Application Administrator or Application Administrator when directory changes are required
 - an existing `FGI-ORACLE` resource group
 - an existing `FGI-ORACLE` Fabric workspace on active capacity
 - Bicep and `sqlcmd` installed locally
+
+Run the read-only preflight on its own when preparing a new workstation:
+
+```powershell
+.\scripts\Test-DemoPrerequisites.ps1 `
+  -SubscriptionId $env:AZURE_SUBSCRIPTION_ID `
+  -TenantId $env:AZURE_TENANT_ID
+```
+
+The full deployment runs the same preflight before creating infrastructure.
 
 ```powershell
 $env:AZURE_SUBSCRIPTION_ID = '<subscription-id>'
@@ -258,6 +270,23 @@ $env:AZURE_TENANT_ID = '<tenant-id>'
 The script deploys Azure, installs Oracle, registers the gateway, creates the Fabric items, and validates the initial snapshot plus live CDC. You can run it again without creating a second environment.
 
 No tenant ID, subscription ID, account, token, password, certificate, recovery key, or private key is stored in Git.
+
+<details>
+<summary>Issue 1 checks and recovery commands</summary>
+
+| Check | Behavior |
+| --- | --- |
+| Azure CLI, Bicep, SSH and `sqlcmd` | The preflight stops immediately and prints the install command. For `sqlcmd`: `winget install --id Microsoft.Sqlcmd --exact --accept-source-agreements --accept-package-agreements --silent` |
+| Azure subscription feature | Requires `Microsoft.Network/AllowBringYourOwnPublicIpAddress` to be `Registered` and prints the `az feature register`, `az feature show`, and `az provider register` commands when it is not |
+| Fabric tenant settings | Checks both service principal settings and links directly to the Fabric admin portal when one is disabled |
+| Microsoft Entra role | Requires Cloud Application Administrator or Application Administrator only when directory writes are still needed |
+| PIM token refresh | The error prints `az logout`, `az login --tenant $env:AZURE_TENANT_ID --use-device-code`, and `az account set --subscription $env:AZURE_SUBSCRIPTION_ID` |
+| Bastion reruns | Lists Bastion resources, checks the Azure CLI exit code, then creates or updates exactly one matching resource |
+| Fabric gateway identity | The automation service principal registers, discovers, and administers the gateway and Fabric connection, with a bounded three-minute retry |
+| Oracle network | Applies runtime and permanent `firewalld` rules, then tests Gateway VM to Oracle VM TCP `1521` before Fabric connection creation |
+| CDC validation | Remains independently runnable with `.\tests\Invoke-DemoCdcValidation.ps1` and gives the exact `sqlcmd` install command when needed |
+
+</details>
 
 ## Current deployment
 
